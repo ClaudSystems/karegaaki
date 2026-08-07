@@ -1,0 +1,49 @@
+name: karegaaki_app
+description: KaregaAki - Marketplace de Produtos Digitais
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # Estado
+  provider: ^6.1.2
+
+  # HTTP
+  dio: ^5.7.0
+
+  # Armazenamento
+  flutter_secure_storage: ^9.2.4
+  shared_preferences: ^2.3.4
+
+  # Firebase
+  firebase_core: ^3.12.0
+  firebase_auth: ^5.5.0
+  google_sign_in: ^6.3.0
+  firebase_messaging: ^15.2.0
+
+  # Câmara e Imagens
+  image_picker: ^1.1.2
+
+  # UI
+  shimmer: ^3.0.0
+  google_fonts: ^6.2.1
+
+  # Utilidades
+  intl: ^0.20.2
+  url_launcher: ^6.3.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
