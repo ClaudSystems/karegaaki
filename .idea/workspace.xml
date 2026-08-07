@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="1895bcd9-452d-42e6-a8b3-18b5cc804588" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/KaregaAki.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin-panel/src/api/client.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin-panel/src/api/credits.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin-panel/src/api/products.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin-panel/src/api/transactions.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin-panel/src/components/credits/CreditSlideover.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin-panel/src/components/layout/Layout.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin-panel/src/components/layout/Sidebar.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin-panel/src/components/layout/TopBar.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin-panel/src/components/products/ProductSlideover.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin-panel/src/components/transactions/TransactionCancelSlideover.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin-panel/src/components/transactions/TransactionDetailModal.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin-panel/src/pages/AdminUsersPage.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin-panel/src/pages/CreditsPage.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin-panel/src/pages/CustomersPage.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin-panel/src/pages/Dashboard.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin-panel/src/pages/LoginPage.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin-panel/src/pages/ProductsPage.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin-panel/src/pages/TransactionsPage.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin-panel/src/stores/authStore.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin-panel/src/stores/creditStore.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin-panel/src/stores/productStore.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin-panel/src/types/auth.types.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin-panel/src/types/credit.types.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin-panel/src/types/product.types.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin-panel/src/types/transaction.types.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin-panel/src/utils/formatters.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin-panel/tailwind.config.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/.env" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/api/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/api/repositories/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/api/utils/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/api/v1/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/api/v1/endpoints/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/api/v1/endpoints/admin_credits.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/api/v1/endpoints/admin_customers.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/api/v1/endpoints/admin_dashboard.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/api/v1/endpoints/admin_products.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/api/v1/endpoints/admin_transactions.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/api/v1/endpoints/admin_users.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/api/v1/endpoints/admin_wallets.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/api/v1/endpoints/auth.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/api/v1/endpoints/credits.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/api/v1/endpoints/products.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/api/v1/endpoints/transactions.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/api/v1/endpoints/wallet.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/api/v1/router.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/core/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/core/config.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/core/database.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/core/dependencies.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/core/security.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/core/serializers.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/integrations/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/integrations/notifications/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/integrations/suppliers/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/main.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/models/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/models/admin.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/models/base.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/models/credit.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/models/kyc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/models/product.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/models/stock.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/models/supplier.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/models/transaction.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/models/user.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/models/wallet.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/repositories/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/repositories/base_repository.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/schemas/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/schemas/auth.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/schemas/credit.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/schemas/product.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/schemas/transaction.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/schemas/wallet.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/services/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/services/auth_service.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/services/credit_service.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/services/product_service.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/services/transaction_service.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/services/wallet_service.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/tasks/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/utils/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/utils/reference_generator.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/requirements.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/scripts/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/scripts/fix_schemas.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/scripts/fix_schemas2.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/scripts/fix_schemas3.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/scripts/seed_db.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/scripts/seed_kyc.py" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 5,
+  "fromUser": false
+}]]></component>
+  <component name="ProjectId" id="3HaH1GGGjsIe6K6rgFaMMnxqgy3" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "git-widget-placeholder": "master",
+    "kotlin-language-version-configured": "true",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "preferences.pluginManager",
+    "ts.external.directory.path": "W:\\KaregaAki\\admin-panel\\node_modules\\typescript\\lib"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="W:\KaregaAki\admin-panel\src" />
+      <recent name="W:\KaregaAki\admin-panel\src\stores" />
+      <recent name="W:\KaregaAki\admin-panel\src\components" />
+      <recent name="W:\KaregaAki\backend\app\api\v1" />
+    </key>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="1895bcd9-452d-42e6-a8b3-18b5cc804588" name="Changes" comment="" />
+      <created>1786099046990</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1786099046990</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>

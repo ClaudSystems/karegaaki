@@ -1,0 +1,116 @@
+import { useEffect } from 'react';
+import { useProductStore } from '../stores/productStore';
+import { Package, Edit, Trash2  } from 'lucide-react';
+import { getStatusColor } from '../utils/formatters';
+import ProductSlideover from '../components/products/ProductSlideover';
+import { Toaster } from 'react-hot-toast';
+import type { Product } from '../types/product.types';
+
+
+export default function ProductsPage() {
+    const { products, total, loading, fetchProducts, openSlideover } = useProductStore();
+
+    useEffect(() => {
+        fetchProducts();
+    }, [fetchProducts]);
+
+    const handleEdit = (product: Product) => {
+        openSlideover(product);
+    };
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            </div>
+        );
+    }
+
+    return (
+        <div>
+            <Toaster position="top-right" toastOptions={{ style: { background: '#1e293b', color: '#f1f5f9', border: '1px solid #334155' } }} />
+            <ProductSlideover />
+
+            <div className="flex items-center justify-between mb-6">
+                <div>
+                    <h2 className="text-2xl font-bold text-white">Produtos</h2>
+                    <p className="text-slate-400 text-sm mt-1">{total} produtos encontrados</p>
+                </div>
+                <button
+                    onClick={() => openSlideover()}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2 transition-colors"
+                >
+                    <Package size={16} />
+                    Novo Produto
+                </button>
+            </div>
+
+            <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+                <table className="w-full">
+                    <thead>
+                    <tr className="border-b border-slate-700">
+                        <th className="text-left p-4 text-sm font-medium text-slate-400">Nome</th>
+                        <th className="text-left p-4 text-sm font-medium text-slate-400">Categoria</th>
+                        <th className="text-left p-4 text-sm font-medium text-slate-400">Preço (Créditos)</th>
+                        <th className="text-left p-4 text-sm font-medium text-slate-400">Stock</th>
+                        <th className="text-left p-4 text-sm font-medium text-slate-400">Status</th>
+                        <th className="text-left p-4 text-sm font-medium text-slate-400">Ações</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {products.map((product) => (
+                        <tr key={product.id} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
+                            <td className="p-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-slate-700 rounded-lg flex items-center justify-center">
+                                        <Package size={18} className="text-slate-400" />
+                                    </div>
+                                    <span className="text-white text-sm font-medium">{product.name}</span>
+                                </div>
+                            </td>
+                            <td className="p-4 text-slate-400 text-sm">{product.category_name || '-'}</td>
+                            <td className="p-4 text-white text-sm">{product.credit_price} créditos</td>
+                            <td className="p-4">
+                  <span className={`text-sm font-medium ${
+                      product.stock_available <= 2 ? 'text-red-400' :
+                          product.stock_available <= 5 ? 'text-yellow-400' : 'text-green-400'
+                  }`}>
+                    {product.stock_available}
+                  </span>
+                            </td>
+                            <td className="p-4">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(product.is_active ? 'available' : 'expired')}`}>
+                    {product.is_active ? 'Ativo' : 'Inativo'}
+                  </span>
+                            </td>
+                            <td className="p-4">
+                                <button
+                                    onClick={() => handleEdit(product)}
+                                    className="text-slate-400 hover:text-white transition-colors"
+                                >
+                                    <Edit size={16} />
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        if (confirm('Eliminar este produto?')) {
+                                            useProductStore.getState().deleteProduct(product.id);
+                                        }
+                                    }}
+                                    className="text-slate-400 hover:text-red-400 transition-colors ml-2"
+                                >
+                                    <Trash2 size={16} />
+                                </button>
+                            </td>
+                        </tr>
+                    ))}
+                    </tbody>
+                </table>
+                {products.length === 0 && (
+                    <div className="text-center py-12 text-slate-500">
+                        Nenhum produto encontrado.
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}

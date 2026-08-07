@@ -1,0 +1,31 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.env
+venv/
+.venv/
+*.db
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Flutter
+build/
+.dart_tool/
+.packages
+*.iml
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Uploads
+uploads/
+
+# Docker
+docker-compose.override.yml
