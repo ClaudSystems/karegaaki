@@ -16,21 +16,28 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLogin = true;
 
   Future<void> _submit() async {
+    print('🔵 _submit chamado');
     final auth = context.read<AuthProvider>();
     final phone = '+258' + _phoneController.text.trim().replaceAll(' ', '');
-    bool success;
+    print('🔵 phone: $phone, pin: ${_pinController.text}');
 
+    bool success;
     if (_isLogin) {
       success = await auth.loginWithPhone(phone, _pinController.text.trim());
     } else {
       success = await auth.register(phone, 'Utilizador', _pinController.text.trim());
     }
 
+    print('🔵 success: $success, mounted: $mounted');
+
     if (success && mounted) {
+      print('🔵 a navegar para HomeScreen');
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const HomeScreen()),
       );
+    } else {
+      print('🔵 NÃO navegou. success=$success, mounted=$mounted');
     }
   }
 
