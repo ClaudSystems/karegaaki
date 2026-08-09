@@ -3,6 +3,7 @@ from app.api.v1.endpoints import admin_customers
 from app.api.v1.endpoints import admin_users
 from app.api.v1.endpoints import disputes
 from app.api.v1.endpoints import payments
+from app.api.v1.endpoints import kyc
 from app.api.v1.endpoints import (
     auth, products, credits, wallet, transactions,
     admin_products, admin_credits, admin_wallets, admin_transactions, admin_dashboard,
@@ -25,3 +26,4 @@ router.include_router(admin_users.router)
 router.include_router(admin_customers.router)
 router.include_router(disputes.router)
 router.include_router(payments.router)
+router.include_router(kyc.router)

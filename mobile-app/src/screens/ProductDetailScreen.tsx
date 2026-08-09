@@ -1,6 +1,7 @@
 // src/screens/ProductDetailScreen.tsx
 import React from 'react';
 import { Product } from '../types';
+import { formatCredits } from '../utils/format';
 import { useCartStore } from '../stores/cartStore';
 import { ArrowLeft, ShoppingCart, ChevronLeft, AlertTriangle, CheckCircle2, Ban, AlertCircle, CheckCircle } from 'lucide-react';
 
@@ -73,7 +74,7 @@ export default function ProductDetailScreen({ product, onBack, onCartClick }: Pr
                     {/* Preço */}
                     <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
                         <span className="text-slate-400 text-[11px]">Preço em Créditos</span>
-                        <span className="text-base font-bold text-emerald-400">{product.credit_price} cr</span>
+                        <span className="text-base font-bold text-emerald-400">{formatCredits(product.credit_price)} cr</span>
                     </div>
 
                     {/* Banner Stock */}

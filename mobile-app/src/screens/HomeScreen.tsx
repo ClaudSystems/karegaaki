@@ -6,6 +6,7 @@ import { productsAPI } from '../api/client';
 import { Product, Category } from '../types';
 import { Search, ShoppingCart, ShoppingBag, X,Wallet } from 'lucide-react';
 import { walletAPI } from '../api/client';
+import { formatCredits, formatCurrency } from '../utils/format';
 
 
 interface HomeScreenProps {
@@ -15,6 +16,10 @@ interface HomeScreenProps {
 }
 
 export default function HomeScreen({ onProductClick, onCartClick , onWalletClick}: HomeScreenProps) {
+    // Função para formatar número
+    const formatNumber = (value: number): string => {
+        return value.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    };
     const [products, setProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [search, setSearch] = useState('');
@@ -23,6 +28,7 @@ export default function HomeScreen({ onProductClick, onCartClick , onWalletClick
     const [error, setError] = useState<string | null>(null);
 
     const { addItem, count } = useCartStore();
+
 
     useEffect(() => {
         loadProducts();
@@ -69,14 +75,23 @@ export default function HomeScreen({ onProductClick, onCartClick , onWalletClick
         loadBalance();
     }, []);
 
+    // Adiciona state para forçar refresh
+    const [refreshKey, setRefreshKey] = useState(0);
+
+// Função loadBalance
     const loadBalance = async () => {
         try {
             const res: any = await walletAPI.balance();
-            setBalance(res?.balance || res?.data?.balance || 0);
+            setBalance(res?.balance_credit || res?.balance || res?.data?.balance || 0);
         } catch (err) {
             console.error('Erro ao carregar saldo:', err);
         }
     };
+
+// useEffect que roda sempre que o componente monta
+    useEffect(() => {
+        loadBalance();
+    }, [refreshKey]);
 
 
 
@@ -89,7 +104,7 @@ export default function HomeScreen({ onProductClick, onCartClick , onWalletClick
                     <div className="w-2 h-2 rounded-full bg-emerald-400" />
                     <span className="text-slate-400">Saldo Disponível</span>
                 </div>
-                <span className="text-emerald-400 font-bold">{balance.toFixed(2)} Créditos</span>
+                <span className="text-emerald-400 font-bold">{formatNumber(balance)} Créditos</span>
             </div>            {/* Header */}
             <div className="sticky top-0 z-10 bg-slate-950/95 backdrop-blur border-b border-slate-800 p-4">
                 {/* Header - dentro da div flex items-center justify-between */}
@@ -233,7 +248,7 @@ export default function HomeScreen({ onProductClick, onCartClick , onWalletClick
                                 </div>
 
                                 <div className="flex items-center justify-between pt-1">
-                                    <span className="text-xs font-bold text-emerald-400">{product.credit_price} cr</span>
+                                    <span className="text-xs font-bold text-emerald-400">{formatCredits(product.credit_price)} cr</span>
                                     <div className="flex items-center gap-1.5">
                                         {!isOutOfStock && (
                                             <button

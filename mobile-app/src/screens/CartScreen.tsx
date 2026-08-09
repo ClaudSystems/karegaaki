@@ -1,5 +1,6 @@
 // src/screens/CartScreen.tsx
 import React, { useState } from 'react';
+import { formatCurrency } from '../utils/format';
 import { useCartStore } from '../stores/cartStore';
 import { transactionsAPI } from '../api/client';
 import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag, CheckCircle, Gift, Share2 } from 'lucide-react';
@@ -31,12 +32,15 @@ export default function CartScreen({ onBack }: CartScreenProps) {
 
             const res: any = await transactionsAPI.checkout(checkoutItems);
 
-            const txData = res.data || res;
+            // Extrai o código do primeiro item
+            const firstItem = res?.items?.[0] || res?.data?.items?.[0] || {};
+            const codeDelivered = firstItem.code_delivered || res?.reference || '#TX-OK';
+
             setOrderSuccess({
                 product_name: items.length === 1 ? items[0].product.name : `${items.length} produtos`,
-                code_delivered: txData.reference || res.reference || '#TX-OK',
-                reference: txData.reference || res.reference || '#TX-OK',
-                credit_price: total().toFixed(2),
+                code_delivered: codeDelivered,
+                reference: res.reference || res.data?.reference || '#TX-OK',
+                credit_price: formatCurrency(total()),
             });
 
             clearCart();
@@ -163,10 +167,10 @@ export default function CartScreen({ onBack }: CartScreenProps) {
             )}
 
             {items.length > 0 && (
-                <div className="fixed bottom-0 left-0 right-0 bg-slate-950 border-t border-slate-800 p-4">
+                <div className="fixed bottom-16 left-0 right-0 bg-slate-950 border-t border-slate-800 p-4">
                     <div className="flex items-center justify-between mb-3">
                         <span className="text-slate-400 text-sm">Total</span>
-                        <span className="text-lg font-bold text-white">{total().toFixed(2)} cr</span>
+                        <span className="text-lg font-bold text-white">{formatCurrency(total())} cr</span>
                     </div>
                     <button
                         onClick={handleCheckout}
