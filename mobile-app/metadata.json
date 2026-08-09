@@ -1,0 +1,6 @@
+{
+  "name": "KaregaAki Mobile Client",
+  "description": "Aplicação cliente para o ecossistema KaregaAki (Gift Cards, Recargas M-Pesa e Jogos) conectada ao Backend Python na VPS.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -7,6 +7,7 @@ from app.models.credit import CreditPackage, CreditPurchase
 from app.models.wallet import Wallet, WalletMovement
 from app.models.transaction import Transaction, TransactionItem
 from app.models.kyc import CustomerProfile, KycLevelConfig
+from app.models.dispute import Dispute
 
 __all__ = [
     "BaseModel",
@@ -25,6 +26,7 @@ __all__ = [
     "TransactionItem",
     "CustomerProfile",
     "KycLevelConfig",
+    "Dispute",
 
 
 ]

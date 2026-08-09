@@ -15,8 +15,11 @@ class CreditPackageResponse(BaseModel):
     display_order: int
 
 
+from pydantic import BaseModel, Field
+
 class CreditPurchaseRequest(BaseModel):
     package_id: str
+    payment_method: str = Field(default="mpesa")
 
 
 class CreditPurchaseResponse(BaseModel):
@@ -26,6 +29,10 @@ class CreditPurchaseResponse(BaseModel):
     amount_mzn: Decimal
     credit_received: Decimal
     status: str
+    payment_method: str = "mpesa"
+    payment_name: Optional[str] = None
+    payment_number: Optional[str] = None
+    confirmation_name: Optional[str] = None
     payment_instructions: Optional[str] = None
 
 

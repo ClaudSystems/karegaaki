@@ -1,6 +1,8 @@
+# app/schemas/auth.py
 from app.core.serializers import AppBaseModel
-from pydantic import ConfigDict, BaseModel, Field
+from pydantic import ConfigDict, BaseModel, Field, field_validator
 from typing import Optional
+from uuid import UUID
 
 
 class UserRegisterRequest(BaseModel):
@@ -34,3 +36,10 @@ class UserResponse(AppBaseModel):
     user_type: str
     is_active: bool
     is_verified: bool
+
+    @field_validator('id', mode='before')
+    @classmethod
+    def convert_uuid_to_str(cls, v):
+        if isinstance(v, UUID):
+            return str(v)
+        return v

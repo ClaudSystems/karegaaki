@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import {
-    LayoutDashboard, Package, Coins, ArrowLeftRight,
-    Truck, Users, Settings, Radio, Shield, UserCheck,
+    LayoutDashboard, Package, Coins, ArrowLeftRight,AlertTriangle,
+    Truck, Settings, Radio, Shield, UserCheck,
 } from 'lucide-react';
 
 const menuItems = [
@@ -14,6 +14,7 @@ const menuItems = [
     { to: '/gateway', icon: Radio, label: 'Gateway SMS' },
     { to: '/users', icon: Shield, label: 'Administração' },
     { to: '/settings', icon: Settings, label: 'Configurações' },
+    { to: '/disputes', icon: AlertTriangle, label: 'Disputas' },
 ];
 
 export default function Sidebar() {

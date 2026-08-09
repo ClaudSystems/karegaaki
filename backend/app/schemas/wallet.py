@@ -1,7 +1,9 @@
 from app.core.serializers import AppBaseModel
-from pydantic import ConfigDict, BaseModel
+from pydantic import ConfigDict, field_validator
 from typing import Optional
 from decimal import Decimal
+from datetime import datetime
+from uuid import UUID
 
 
 class WalletBalanceResponse(AppBaseModel):
@@ -10,6 +12,8 @@ class WalletBalanceResponse(AppBaseModel):
     balance_credit: Decimal
     total_purchased_credit: Decimal
     total_spent_credit: Decimal
+
+
 class WalletMovementResponse(AppBaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: str
@@ -20,3 +24,17 @@ class WalletMovementResponse(AppBaseModel):
     balance_after: Optional[Decimal] = None
     description: Optional[str] = None
     created_at: str
+
+    @field_validator('id', mode='before')
+    @classmethod
+    def convert_uuid(cls, v):
+        if isinstance(v, UUID):
+            return str(v)
+        return v
+
+    @field_validator('created_at', mode='before')
+    @classmethod
+    def convert_datetime(cls, v):
+        if isinstance(v, datetime):
+            return v.isoformat()
+        return v
