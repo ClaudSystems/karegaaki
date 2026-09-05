@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+from app.api.v1.endpoints import admin_auth
 from app.api.v1.endpoints import admin_customers
 from app.api.v1.endpoints import admin_users
 from app.api.v1.endpoints import disputes
@@ -27,3 +28,4 @@ router.include_router(admin_customers.router)
 router.include_router(disputes.router)
 router.include_router(payments.router)
 router.include_router(kyc.router)
+router.include_router(admin_auth.router)
