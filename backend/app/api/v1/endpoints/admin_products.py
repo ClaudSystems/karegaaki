@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func
 from app.core.database import get_db
-from app.core.dependencies import get_current_user
+from app.core.dependencies import get_current_admin
 from app.models.product import Product
 from pydantic import BaseModel
 from typing import Optional
@@ -27,11 +28,56 @@ class ProductUpdate(BaseModel):
     is_active: Optional[bool] = None
 
 
+@router.get("")
+async def get_products(
+        search: Optional[str] = Query(None),
+        page: int = Query(1, ge=1),
+        page_size: int = Query(20, ge=1, le=100),
+        db: AsyncSession = Depends(get_db),
+        current_admin=Depends(get_current_admin),
+):
+    query = select(Product)
+
+    if search:
+        query = query.where(Product.name.ilike(f"%{search}%"))
+
+    query = query.order_by(Product.created_at.desc())
+
+    count_query = select(func.count()).select_from(query.subquery())
+    total_result = await db.execute(count_query)
+    total = total_result.scalar_one()
+
+    offset = (page - 1) * page_size
+    query = query.offset(offset).limit(page_size)
+
+    result = await db.execute(query)
+    products = result.scalars().all()
+
+    return {
+        "items": [
+            {
+                "id": str(p.id),
+                "name": p.name,
+                "slug": p.slug,
+                "description": p.description,
+                "category_id": str(p.category_id) if p.category_id else None,
+                "credit_price": str(p.credit_price),
+                "is_active": p.is_active,
+                "display_order": p.display_order,
+            }
+            for p in products
+        ],
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    }
+
+
 @router.post("")
 async def create_product(
         data: ProductCreate,
         db: AsyncSession = Depends(get_db),
-        current_user=Depends(get_current_user),
+        current_admin=Depends(get_current_admin),
 ):
     product = Product(
         name=data.name,
@@ -52,9 +98,8 @@ async def update_product(
         product_id: str,
         data: ProductUpdate,
         db: AsyncSession = Depends(get_db),
-        current_user=Depends(get_current_user),
+        current_admin=Depends(get_current_admin),
 ):
-    from sqlalchemy import select
     result = await db.execute(select(Product).where(Product.id == product_id))
     product = result.scalar_one_or_none()
     if not product:
@@ -68,19 +113,18 @@ async def update_product(
     await db.commit()
     return {"id": str(product.id), "name": product.name, "slug": product.slug}
 
+
 @router.delete("/{product_id}")
 async def delete_product(
         product_id: str,
         db: AsyncSession = Depends(get_db),
-        current_user=Depends(get_current_user),
+        current_admin=Depends(get_current_admin),
 ):
-    from sqlalchemy import select
     result = await db.execute(select(Product).where(Product.id == product_id))
     product = result.scalar_one_or_none()
     if not product:
         return {"error": "Produto não encontrado"}, 404
 
-    # Soft delete - apenas desativa
     product.is_active = False
     await db.flush()
     await db.commit()

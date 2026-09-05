@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from app.core.database import get_db
+from app.core.dependencies import get_current_admin
 from app.models.wallet import Wallet
 from typing import Optional
 
@@ -14,6 +15,7 @@ async def get_wallets(
         page_size: int = Query(20, ge=1, le=100),
         search: Optional[str] = Query(None),
         db: AsyncSession = Depends(get_db),
+        current_admin=Depends(get_current_admin),
 ):
     query = select(Wallet)
 

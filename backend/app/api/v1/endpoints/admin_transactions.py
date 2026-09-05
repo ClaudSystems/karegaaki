@@ -2,10 +2,16 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from app.core.database import get_db
+from app.core.dependencies import get_current_admin
 from app.models.transaction import Transaction, TransactionItem
 from app.models.product import Product
-from typing import Optional
 from app.models.stock import StockItem
+from app.models.user import User
+from app.models.wallet import Wallet, WalletMovement
+from app.utils.reference_generator import generate_reference
+from pydantic import BaseModel
+from typing import Optional
+from datetime import datetime
 
 router = APIRouter(prefix="/admin/transactions", tags=["Admin - Transações"])
 
@@ -17,6 +23,7 @@ async def get_all_transactions(
         status: Optional[str] = Query(None),
         search: Optional[str] = Query(None),
         db: AsyncSession = Depends(get_db),
+        current_admin=Depends(get_current_admin),
 ):
     query = select(Transaction).order_by(Transaction.created_at.desc())
 
@@ -72,7 +79,7 @@ async def get_all_transactions(
         "page": page,
         "page_size": page_size,
     }
-from pydantic import BaseModel
+
 
 class CreatePendingTransaction(BaseModel):
     user_phone: str
@@ -84,19 +91,13 @@ class CreatePendingTransaction(BaseModel):
 async def create_pending_transaction(
         data: CreatePendingTransaction,
         db: AsyncSession = Depends(get_db),
+        current_admin=Depends(get_current_admin),
 ):
-    from app.models.user import User
-    from app.models.product import Product
-    from app.models.stock import StockItem
-    from app.utils.reference_generator import generate_reference
-
-    # Encontrar utilizador
     result = await db.execute(select(User).where(User.phone_number == data.user_phone))
     user = result.scalar_one_or_none()
     if not user:
         return {"error": "Utilizador não encontrado"}, 404
 
-    # Encontrar produto
     result = await db.execute(select(Product).where(Product.id == data.product_id))
     product = result.scalar_one_or_none()
     if not product:
@@ -144,11 +145,8 @@ class ConfirmTransactionRequest(BaseModel):
 async def confirm_pending_transaction(
         data: ConfirmTransactionRequest,
         db: AsyncSession = Depends(get_db),
+        current_admin=Depends(get_current_admin),
 ):
-    from app.models.stock import StockItem
-    from app.models.wallet import Wallet, WalletMovement
-    from datetime import datetime
-
     result = await db.execute(select(Transaction).where(Transaction.id == data.transaction_id))
     tx = result.scalar_one_or_none()
     if not tx:
@@ -157,7 +155,6 @@ async def confirm_pending_transaction(
     if tx.payment_status != "pending":
         return {"error": "Transação não está pendente"}, 400
 
-    # Reservar e entregar stock
     items_result = await db.execute(
         select(TransactionItem).where(TransactionItem.transaction_id == tx.id)
     )
@@ -195,6 +192,8 @@ async def confirm_pending_transaction(
         "delivery": "delivered",
         "codes": [item.code_delivered for item in items],
     }
+
+
 class CancelTransactionRequest(BaseModel):
     transaction_id: str
     refund_credits: bool = True
@@ -205,10 +204,8 @@ class CancelTransactionRequest(BaseModel):
 async def cancel_transaction(
         data: CancelTransactionRequest,
         db: AsyncSession = Depends(get_db),
+        current_admin=Depends(get_current_admin),
 ):
-    from app.models.wallet import Wallet, WalletMovement
-    from datetime import datetime
-
     result = await db.execute(select(Transaction).where(Transaction.id == data.transaction_id))
     tx = result.scalar_one_or_none()
     if not tx:
@@ -220,7 +217,6 @@ async def cancel_transaction(
     original_status = tx.payment_status
     was_delivered = tx.delivery_status == "delivered"
 
-    # Libertar stock (se escolhido)
     if data.release_stock and was_delivered:
         items_result = await db.execute(
             select(TransactionItem).where(TransactionItem.transaction_id == tx.id)
@@ -239,7 +235,6 @@ async def cancel_transaction(
                     stock.transaction_id = None
                     item.code_delivered = None
 
-    # Devolver créditos (se escolhido)
     refunded = False
     refund_amount = 0
     if data.refund_credits and tx.payment_method == "credit" and original_status == "confirmed":

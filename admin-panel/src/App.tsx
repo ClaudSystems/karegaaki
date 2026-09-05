@@ -9,21 +9,58 @@ import TransactionsPage from './pages/TransactionsPage';
 import AdminUsersPage from './pages/AdminUsersPage';
 import CustomersPage from './pages/CustomersPage';
 import DisputesPage from './pages/DisputesPage';
+import { Truck, Radio, Settings } from 'lucide-react';
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: string[] }) {
   const token = useAuthStore((s) => s.token);
-  if (!token) return <Navigate to="/login" />;
+  const admin = useAuthStore((s) => s.admin);
+
+  if (!token) return <Navigate to="/login" replace />;
+
+  if (allowedRoles && admin && !allowedRoles.includes(admin.role)) {
+    return <Navigate to="/" replace />;
+  }
+
   return <>{children}</>;
 }
 
 function Suppliers() {
-  return <div><h2 className="text-2xl font-bold text-white">Fornecedores</h2></div>;
+  return (
+      <div className="p-6">
+        <h2 className="text-2xl font-bold text-white mb-4">Fornecedores</h2>
+        <div className="bg-slate-800 rounded-xl border border-slate-700 p-8 text-center">
+          <Truck className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+          <p className="text-slate-400">Gestão de fornecedores em desenvolvimento</p>
+          <p className="text-xs text-slate-500 mt-2">Disponível em breve</p>
+        </div>
+      </div>
+  );
 }
+
 function Gateway() {
-  return <div><h2 className="text-2xl font-bold text-white">Gateway SMS</h2></div>;
+  return (
+      <div className="p-6">
+        <h2 className="text-2xl font-bold text-white mb-4">Gateway SMS</h2>
+        <div className="bg-slate-800 rounded-xl border border-slate-700 p-8 text-center">
+          <Radio className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+          <p className="text-slate-400">Gateway SMS em desenvolvimento</p>
+          <p className="text-xs text-slate-500 mt-2">Disponível em breve</p>
+        </div>
+      </div>
+  );
 }
-function Settings() {
-  return <div><h2 className="text-2xl font-bold text-white">Configurações</h2></div>;
+
+function SettingsPage() {
+  return (
+      <div className="p-6">
+        <h2 className="text-2xl font-bold text-white mb-4">Configurações</h2>
+        <div className="bg-slate-800 rounded-xl border border-slate-700 p-8 text-center">
+          <Settings className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+          <p className="text-slate-400">Configurações do sistema em desenvolvimento</p>
+          <p className="text-xs text-slate-500 mt-2">Disponível em breve</p>
+        </div>
+      </div>
+  );
 }
 
 export default function App() {
@@ -42,10 +79,20 @@ export default function App() {
             <Route path="transactions" element={<TransactionsPage />} />
             <Route path="customers" element={<CustomersPage />} />
             <Route path="disputes" element={<DisputesPage />} />
-            <Route path="users" element={<AdminUsersPage />} />
+
+            <Route path="users" element={
+              <ProtectedRoute allowedRoles={['super_admin']}>
+                <AdminUsersPage />
+              </ProtectedRoute>
+            } />
+
             <Route path="suppliers" element={<Suppliers />} />
             <Route path="gateway" element={<Gateway />} />
-            <Route path="settings" element={<Settings />} />
+            <Route path="settings" element={
+              <ProtectedRoute allowedRoles={['super_admin']}>
+                <SettingsPage />
+              </ProtectedRoute>
+            } />
           </Route>
         </Routes>
       </BrowserRouter>

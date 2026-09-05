@@ -2,8 +2,9 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from app.core.database import get_db
+from app.core.dependencies import get_current_admin
 from app.models.user import User
-from app.models.wallet import Wallet
+from app.models.wallet import Wallet, WalletMovement
 from app.models.kyc import CustomerProfile, KycLevelConfig
 from pydantic import BaseModel
 from typing import Optional
@@ -19,6 +20,7 @@ async def get_customers(
         kyc_level: Optional[str] = Query(None),
         is_blocked: Optional[bool] = Query(None),
         db: AsyncSession = Depends(get_db),
+        current_admin=Depends(get_current_admin),
 ):
     query = (
         select(
@@ -94,7 +96,7 @@ class UpdateCustomerRequest(BaseModel):
     is_blocked: Optional[bool] = None
     blocked_reason: Optional[str] = None
     notes: Optional[str] = None
-    adjust_credits: Optional[float] = None  # positivo = adiciona, negativo = remove
+    adjust_credits: Optional[float] = None
 
 
 @router.put("/{user_id}")
@@ -102,8 +104,8 @@ async def update_customer(
         user_id: str,
         data: UpdateCustomerRequest,
         db: AsyncSession = Depends(get_db),
+        current_admin=Depends(get_current_admin),
 ):
-    # Buscar ou criar perfil
     result = await db.execute(select(CustomerProfile).where(CustomerProfile.user_id == user_id))
     profile = result.scalar_one_or_none()
 
@@ -125,9 +127,7 @@ async def update_customer(
     if data.notes is not None:
         profile.notes = data.notes
 
-    # Ajustar créditos
     if data.adjust_credits is not None and data.adjust_credits != 0:
-        from app.models.wallet import WalletMovement
         wallet_result = await db.execute(select(Wallet).where(Wallet.user_id == user_id))
         wallet = wallet_result.scalar_one_or_none()
         if wallet:
@@ -152,7 +152,10 @@ async def update_customer(
 
 
 @router.get("/kyc-levels")
-async def get_kyc_levels(db: AsyncSession = Depends(get_db)):
+async def get_kyc_levels(
+        db: AsyncSession = Depends(get_db),
+        current_admin=Depends(get_current_admin),
+):
     result = await db.execute(select(KycLevelConfig).order_by(KycLevelConfig.max_credit_limit))
     levels = result.scalars().all()
     return [

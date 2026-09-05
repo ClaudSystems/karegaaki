@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from app.core.database import get_db
-from app.core.dependencies import get_current_user
+from app.core.dependencies import get_current_user, get_current_admin
 from app.models.dispute import Dispute
 from app.models.transaction import Transaction
 from app.utils.reference_generator import generate_reference
@@ -15,13 +15,13 @@ router = APIRouter(prefix="/disputes", tags=["Disputas"])
 
 
 class CreateDisputeRequest(BaseModel):
-    transaction_reference: Optional[str] = None  # Referência tipo #TX-...
+    transaction_reference: Optional[str] = None
     dispute_type: str
     description: str
 
 
 class ResolveDisputeRequest(BaseModel):
-    action: str  # refund, resend_code, reject, request_info
+    action: str
     response: str
     refund_amount: Optional[float] = None
 
@@ -36,7 +36,6 @@ async def create_dispute(
 ):
     transaction_id = None
 
-    # Se foi enviada referência, buscar o ID da transação
     if data.transaction_reference:
         result = await db.execute(
             select(Transaction).where(Transaction.reference == data.transaction_reference)
@@ -47,7 +46,7 @@ async def create_dispute(
 
     dispute = Dispute(
         user_id=current_user.id,
-        transaction_id=transaction_id,  # UUID ou None
+        transaction_id=transaction_id,
         reference=generate_reference("DIS"),
         dispute_type=data.dispute_type,
         description=data.description,
@@ -91,10 +90,12 @@ async def get_my_disputes(
     }
 
 
+# ========== ADMIN ==========
+
 @router.get("/admin/all")
 async def get_all_disputes(
         db: AsyncSession = Depends(get_db),
-        current_user=Depends(get_current_user),
+        current_admin=Depends(get_current_admin),  # ← MUDOU
 ):
     result = await db.execute(
         select(Dispute).order_by(Dispute.created_at.desc())
@@ -125,7 +126,7 @@ async def resolve_dispute(
         dispute_id: str,
         data: ResolveDisputeRequest,
         db: AsyncSession = Depends(get_db),
-        current_user=Depends(get_current_user),
+        current_admin=Depends(get_current_admin),  # ← MUDOU
 ):
     result = await db.execute(select(Dispute).where(Dispute.id == dispute_id))
     dispute = result.scalar_one_or_none()
@@ -135,7 +136,7 @@ async def resolve_dispute(
 
     dispute.status = data.action
     dispute.admin_response = data.response
-    dispute.resolved_by = current_user.id
+    dispute.resolved_by = current_admin.id
     dispute.resolved_at = datetime.utcnow()
 
     await db.flush()

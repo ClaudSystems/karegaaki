@@ -1,14 +1,17 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useProductStore } from '../stores/productStore';
-import { Package, Edit, Trash2  } from 'lucide-react';
+import { Package, Edit, Trash2, AlertTriangle, X } from 'lucide-react';
 import { getStatusColor } from '../utils/formatters';
 import ProductSlideover from '../components/products/ProductSlideover';
-import { Toaster } from 'react-hot-toast';
+import { Toaster, toast } from 'react-hot-toast';
 import type { Product } from '../types/product.types';
 
 
 export default function ProductsPage() {
-    const { products, total, loading, fetchProducts, openSlideover } = useProductStore();
+    const { products, total, loading, fetchProducts, openSlideover, deleteProduct } = useProductStore();
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+    const [deleting, setDeleting] = useState(false);
 
     useEffect(() => {
         fetchProducts();
@@ -16,6 +19,26 @@ export default function ProductsPage() {
 
     const handleEdit = (product: Product) => {
         openSlideover(product);
+    };
+
+    const handleDeleteClick = (product: Product) => {
+        setProductToDelete(product);
+        setShowDeleteModal(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!productToDelete) return;
+        setDeleting(true);
+        try {
+            await deleteProduct(productToDelete.id);
+            toast.success('Produto eliminado!');
+            setShowDeleteModal(false);
+            setProductToDelete(null);
+        } catch {
+            toast.error('Erro ao eliminar produto');
+        } finally {
+            setDeleting(false);
+        }
     };
 
     if (loading) {
@@ -71,35 +94,35 @@ export default function ProductsPage() {
                             <td className="p-4 text-slate-400 text-sm">{product.category_name || '-'}</td>
                             <td className="p-4 text-white text-sm">{product.credit_price} créditos</td>
                             <td className="p-4">
-                  <span className={`text-sm font-medium ${
-                      product.stock_available <= 2 ? 'text-red-400' :
-                          product.stock_available <= 5 ? 'text-yellow-400' : 'text-green-400'
-                  }`}>
-                    {product.stock_available}
-                  </span>
+                                <span className={`text-sm font-medium ${
+                                    product.stock_available <= 2 ? 'text-red-400' :
+                                        product.stock_available <= 5 ? 'text-yellow-400' : 'text-green-400'
+                                }`}>
+                                    {product.stock_available}
+                                </span>
                             </td>
                             <td className="p-4">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(product.is_active ? 'available' : 'expired')}`}>
-                    {product.is_active ? 'Ativo' : 'Inativo'}
-                  </span>
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(product.is_active ? 'available' : 'expired')}`}>
+                                    {product.is_active ? 'Ativo' : 'Inativo'}
+                                </span>
                             </td>
                             <td className="p-4">
-                                <button
-                                    onClick={() => handleEdit(product)}
-                                    className="text-slate-400 hover:text-white transition-colors"
-                                >
-                                    <Edit size={16} />
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        if (confirm('Eliminar este produto?')) {
-                                            useProductStore.getState().deleteProduct(product.id);
-                                        }
-                                    }}
-                                    className="text-slate-400 hover:text-red-400 transition-colors ml-2"
-                                >
-                                    <Trash2 size={16} />
-                                </button>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => handleEdit(product)}
+                                        className="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-400 hover:text-white transition-colors"
+                                        title="Editar"
+                                    >
+                                        <Edit size={16} />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeleteClick(product)}
+                                        className="p-2 bg-red-950/50 hover:bg-red-900/50 rounded-lg text-red-400 hover:text-red-300 transition-colors"
+                                        title="Eliminar"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     ))}
@@ -111,6 +134,65 @@ export default function ProductsPage() {
                     </div>
                 )}
             </div>
+
+            {/* Modal de Confirmação de Delete */}
+            {showDeleteModal && productToDelete && (
+                <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-sm border border-slate-700 shadow-2xl animate-scale-in">
+                        {/* Header */}
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-red-950 rounded-full flex items-center justify-center">
+                                    <AlertTriangle className="w-5 h-5 text-red-400" />
+                                </div>
+                                <h3 className="text-lg font-bold text-white">Eliminar Produto</h3>
+                            </div>
+                            <button
+                                onClick={() => setShowDeleteModal(false)}
+                                className="text-slate-400 hover:text-white transition"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        <p className="text-sm text-slate-400 mb-2">
+                            Tem certeza que deseja eliminar:
+                        </p>
+                        <p className="text-white font-bold text-base mb-4 bg-slate-900 rounded-lg p-3">
+                            {productToDelete.name}
+                        </p>
+                        <p className="text-xs text-red-400 flex items-center gap-1.5 mb-6">
+                            <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                            Esta ação não pode ser desfeita.
+                        </p>
+
+                        {/* Actions */}
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setShowDeleteModal(false)}
+                                className="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-medium py-2.5 rounded-lg transition text-sm"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleConfirmDelete}
+                                disabled={deleting}
+                                className="flex-1 bg-red-600 hover:bg-red-500 disabled:bg-slate-700 text-white font-bold py-2.5 rounded-lg transition text-sm flex items-center justify-center gap-2"
+                            >
+                                {deleting ? (
+                                    <>
+                                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        Eliminando...
+                                    </>
+                                ) : (
+                                    'Eliminar'
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

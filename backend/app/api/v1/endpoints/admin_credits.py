@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.database import get_db
-from app.core.dependencies import get_current_user
+from app.core.dependencies import get_current_admin
 from app.models.credit import CreditPackage
 from pydantic import BaseModel
 from typing import Optional
@@ -28,8 +28,35 @@ class CreditPackageUpdate(BaseModel):
     display_order: Optional[int] = None
 
 
+@router.get("/packages")
+async def get_packages(
+        db: AsyncSession = Depends(get_db),
+        current_admin=Depends(get_current_admin),
+):
+    result = await db.execute(select(CreditPackage).order_by(CreditPackage.display_order))
+    packages = result.scalars().all()
+    return {
+        "items": [
+            {
+                "id": str(p.id),
+                "name": p.name,
+                "credit_amount": float(p.credit_amount),
+                "price_mzn": float(p.price_mzn),
+                "bonus_credit": float(p.bonus_credit),
+                "is_active": p.is_active,
+                "display_order": p.display_order,
+            }
+            for p in packages
+        ]
+    }
+
+
 @router.post("/packages")
-async def create_package(data: CreditPackageCreate, db: AsyncSession = Depends(get_db)):
+async def create_package(
+        data: CreditPackageCreate,
+        db: AsyncSession = Depends(get_db),
+        current_admin=Depends(get_current_admin),
+):
     pkg = CreditPackage(**data.model_dump())
     db.add(pkg)
     await db.flush()
@@ -38,7 +65,12 @@ async def create_package(data: CreditPackageCreate, db: AsyncSession = Depends(g
 
 
 @router.put("/packages/{package_id}")
-async def update_package(package_id: str, data: CreditPackageUpdate, db: AsyncSession = Depends(get_db)):
+async def update_package(
+        package_id: str,
+        data: CreditPackageUpdate,
+        db: AsyncSession = Depends(get_db),
+        current_admin=Depends(get_current_admin),
+):
     result = await db.execute(select(CreditPackage).where(CreditPackage.id == package_id))
     pkg = result.scalar_one_or_none()
     if not pkg:
@@ -52,7 +84,11 @@ async def update_package(package_id: str, data: CreditPackageUpdate, db: AsyncSe
 
 
 @router.delete("/packages/{package_id}")
-async def delete_package(package_id: str, db: AsyncSession = Depends(get_db)):
+async def delete_package(
+        package_id: str,
+        db: AsyncSession = Depends(get_db),
+        current_admin=Depends(get_current_admin),
+):
     result = await db.execute(select(CreditPackage).where(CreditPackage.id == package_id))
     pkg = result.scalar_one_or_none()
     if not pkg:

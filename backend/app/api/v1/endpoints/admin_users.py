@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from app.core.database import get_db
+from app.core.dependencies import get_current_admin
 from app.models.admin import AdminUser, AuditLog
 from pydantic import BaseModel
 from typing import Optional
@@ -28,12 +29,11 @@ def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 
-def verify_password(password: str, hashed: str) -> bool:
-    return bcrypt.checkpw(password.encode("utf-8"), hashed.encode("utf-8"))
-
-
 @router.get("")
-async def get_admin_users(db: AsyncSession = Depends(get_db)):
+async def get_admin_users(
+        db: AsyncSession = Depends(get_db),
+        current_admin=Depends(get_current_admin),
+):
     result = await db.execute(select(AdminUser).order_by(AdminUser.created_at.desc()))
     users = result.scalars().all()
     return {
@@ -53,7 +53,11 @@ async def get_admin_users(db: AsyncSession = Depends(get_db)):
 
 
 @router.post("")
-async def create_admin_user(data: AdminUserCreate, db: AsyncSession = Depends(get_db)):
+async def create_admin_user(
+        data: AdminUserCreate,
+        db: AsyncSession = Depends(get_db),
+        current_admin=Depends(get_current_admin),
+):
     existing = await db.execute(select(AdminUser).where(AdminUser.email == data.email))
     if existing.scalar_one_or_none():
         return {"error": "Email já existe"}, 409
@@ -68,10 +72,9 @@ async def create_admin_user(data: AdminUserCreate, db: AsyncSession = Depends(ge
     await db.flush()
     await db.commit()
 
-    # Audit
     log = AuditLog(
-        admin_user_id=str(user.id),
-        admin_email=user.email,
+        admin_user_id=str(current_admin.id),
+        admin_email=current_admin.email,
         action="create_admin",
         entity_type="admin_user",
         entity_id=str(user.id),
@@ -84,7 +87,12 @@ async def create_admin_user(data: AdminUserCreate, db: AsyncSession = Depends(ge
 
 
 @router.put("/{user_id}")
-async def update_admin_user(user_id: str, data: AdminUserUpdate, db: AsyncSession = Depends(get_db)):
+async def update_admin_user(
+        user_id: str,
+        data: AdminUserUpdate,
+        db: AsyncSession = Depends(get_db),
+        current_admin=Depends(get_current_admin),
+):
     result = await db.execute(select(AdminUser).where(AdminUser.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
@@ -107,8 +115,8 @@ async def get_audit_logs(
         page: int = 1,
         page_size: int = 50,
         db: AsyncSession = Depends(get_db),
+        current_admin=Depends(get_current_admin),
 ):
-    from sqlalchemy import func
     query = select(AuditLog).order_by(AuditLog.created_at.desc())
 
     count_query = select(func.count()).select_from(query.subquery())

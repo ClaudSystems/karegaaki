@@ -2,14 +2,26 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.database import get_db
-from app.core.dependencies import get_current_admin  # ← ADICIONAR ESTE IMPORT
+from app.core.dependencies import get_current_admin
 from app.models.admin import AdminUser
-from app.core.security import create_access_token, create_refresh_token
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, timedelta
+from jose import jwt
+from app.core.config import settings
 import bcrypt
 
 router = APIRouter(prefix="/admin/auth", tags=["Admin - Autenticação"])
+
+
+def create_admin_token(admin_id: str, role: str, token_type: str = "admin") -> str:
+    expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    payload = {
+        "sub": admin_id,
+        "role": role,
+        "type": token_type,
+        "exp": expire
+    }
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 
 class AdminLoginRequest(BaseModel):
@@ -49,12 +61,8 @@ async def admin_login(data: AdminLoginRequest, db: AsyncSession = Depends(get_db
     await db.flush()
     await db.commit()
 
-    access_token = create_access_token(
-        data={"sub": str(admin.id), "role": admin.role, "type": "admin"}
-    )
-    refresh_token = create_refresh_token(
-        data={"sub": str(admin.id), "role": admin.role, "type": "admin"}
-    )
+    access_token = create_admin_token(str(admin.id), admin.role, "admin")
+    refresh_token = create_admin_token(str(admin.id), admin.role, "admin_refresh")
 
     return {
         "access_token": access_token,
