@@ -17,6 +17,7 @@ class ProductCreate(BaseModel):
     category_id: Optional[str] = None
     credit_price: float
     is_active: bool = True
+    image_url: Optional[str] = None
 
 
 class ProductUpdate(BaseModel):
@@ -26,6 +27,7 @@ class ProductUpdate(BaseModel):
     category_id: Optional[str] = None
     credit_price: Optional[float] = None
     is_active: Optional[bool] = None
+    image_url: Optional[str] = None
 
 
 @router.get("")
@@ -64,6 +66,7 @@ async def get_products(
                 "credit_price": str(p.credit_price),
                 "is_active": p.is_active,
                 "display_order": p.display_order,
+                "image_url": p.image_url,  # ← ADICIONADO
             }
             for p in products
         ],
@@ -86,6 +89,7 @@ async def create_product(
         category_id=data.category_id,
         credit_price=data.credit_price,
         is_active=data.is_active,
+        image_url=data.image_url,  # ← ADICIONADO
     )
     db.add(product)
     await db.flush()

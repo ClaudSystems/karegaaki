@@ -5,6 +5,8 @@ from app.core.config import settings
 from app.core.database import engine, Base
 from app.api.v1.router import router as v1_router
 from app.models import *  # Importa todos os modelos para registar no Base
+from fastapi.staticfiles import StaticFiles
+
 
 
 @asynccontextmanager
@@ -32,7 +34,7 @@ app.add_middleware(
 )
 
 app.include_router(v1_router)
-
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 @app.get("/")
 async def root():

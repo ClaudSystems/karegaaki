@@ -8,6 +8,7 @@ export interface CreateProductData {
     category_id?: string;
     credit_price: number;
     is_active: boolean;
+    image_url?: string;
 }
 
 export const productApi = {

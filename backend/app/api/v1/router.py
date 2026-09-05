@@ -9,6 +9,8 @@ from app.api.v1.endpoints import (
     auth, products, credits, wallet, transactions,
     admin_products, admin_credits, admin_wallets, admin_transactions, admin_dashboard,
 )
+from app.api.v1.endpoints import admin_uploads
+from app.api.v1.endpoints import admin_stock
 
 
 router = APIRouter(prefix="/api/v1")
@@ -29,3 +31,5 @@ router.include_router(disputes.router)
 router.include_router(payments.router)
 router.include_router(kyc.router)
 router.include_router(admin_auth.router)
+router.include_router(admin_uploads.router)
+router.include_router(admin_stock.router)

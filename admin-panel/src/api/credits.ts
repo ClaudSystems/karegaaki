@@ -3,7 +3,7 @@ import type { CreditPackage } from '../types/credit.types';
 
 export const creditApi = {
     getPackages: async (): Promise<CreditPackage[]> => {
-        const { data } = await apiClient.get('/credits/packages');
+        const { data } = await apiClient.get('/admin/credits/packages');
         return data;
     },
 

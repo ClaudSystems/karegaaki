@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, Upload, Loader } from 'lucide-react';
 import { useProductStore } from '../../stores/productStore';
+import apiClient from '../../api/client';
 
 export default function ProductSlideover() {
     const { slideoverOpen, editingProduct, closeSlideover, saveProduct } = useProductStore();
@@ -10,7 +11,10 @@ export default function ProductSlideover() {
     const [description, setDescription] = useState('');
     const [creditPrice, setCreditPrice] = useState(0);
     const [isActive, setIsActive] = useState(true);
+    const [imageUrl, setImageUrl] = useState('');
     const [saving, setSaving] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (editingProduct) {
@@ -19,12 +23,14 @@ export default function ProductSlideover() {
             setDescription(editingProduct.description || '');
             setCreditPrice(editingProduct.credit_price);
             setIsActive(editingProduct.is_active);
+            setImageUrl(editingProduct.image_url || '');
         } else {
             setName('');
             setSlug('');
             setDescription('');
             setCreditPrice(0);
             setIsActive(true);
+            setImageUrl('');
         }
     }, [editingProduct, slideoverOpen]);
 
@@ -44,6 +50,36 @@ export default function ProductSlideover() {
         }
     };
 
+    const handleFileUpload = async (file: File) => {
+        setUploading(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const token = localStorage.getItem('admin_token');
+            const response = await apiClient.post('/admin/uploads/product-image', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            const data = response.data;
+            setImageUrl(data.image_url);
+        } catch (error) {
+            console.error('Erro ao fazer upload:', error);
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            handleFileUpload(file);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSaving(true);
@@ -53,6 +89,7 @@ export default function ProductSlideover() {
             description: description || undefined,
             credit_price: creditPrice,
             is_active: isActive,
+            image_url: imageUrl || undefined,
         });
         setSaving(false);
     };
@@ -73,6 +110,55 @@ export default function ProductSlideover() {
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-5 space-y-4 overflow-y-auto h-[calc(100%-73px)]">
+                    {/* Upload de Imagem */}
+                    <div>
+                        <label className="text-sm text-slate-400 block mb-1">Imagem do Produto</label>
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp,image/gif"
+                            onChange={handleFileChange}
+                            className="hidden"
+                        />
+
+                        {imageUrl ? (
+                            <div className="relative">
+                                <img
+                                    src={imageUrl.startsWith('http') ? imageUrl : `http://127.0.0.1:8000${imageUrl}`}
+                                    alt="Preview"
+                                    className="w-full h-40 object-cover rounded-lg border border-slate-600"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="absolute bottom-2 right-2 bg-slate-900/80 hover:bg-slate-900 text-white p-2 rounded-lg text-xs"
+                                >
+                                    Trocar
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={uploading}
+                                className="w-full h-40 border-2 border-dashed border-slate-600 rounded-lg flex flex-col items-center justify-center gap-2 text-slate-400 hover:border-blue-500 hover:text-blue-400 transition-colors"
+                            >
+                                {uploading ? (
+                                    <>
+                                        <Loader className="w-8 h-8 animate-spin" />
+                                        <span className="text-xs">Enviando...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Upload className="w-8 h-8" />
+                                        <span className="text-xs">Clique para enviar imagem</span>
+                                        <span className="text-[10px] text-slate-500">JPEG, PNG, WEBP até 5MB</span>
+                                    </>
+                                )}
+                            </button>
+                        )}
+                    </div>
+
                     <div>
                         <label className="text-sm text-slate-400 block mb-1">Nome</label>
                         <input
