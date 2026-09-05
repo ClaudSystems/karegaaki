@@ -2,49 +2,24 @@
 import React, { useState, useEffect } from 'react';
 import { formatCredits } from '../utils/format';
 import { walletAPI, creditsAPI, paymentsAPI } from '../api/client';
-import { ArrowLeft, Wallet, Plus, Clock, CheckCircle, Copy, Check, X, Smartphone } from 'lucide-react';
+import { ArrowLeft, Wallet, Plus, Clock, CheckCircle, X, Smartphone } from 'lucide-react';
+import { CreditPackage, PaymentMethod, WalletMovement, CreditPurchaseResponse } from '../types';
 
 interface WalletScreenProps {
     onBack: () => void;
 }
 
-interface PaymentMethod {
-    id: string;
-    name: string;
-    icon: string;
-    color: string;
-    enabled: boolean;
-    confirmation_name: string;
-    number?: string;
-    instructions: string[];
-    reference_format: string;
-    note: string;
-}
-
-interface PurchaseResponse {
-    id: string;
-    reference: string;
-    amount_mzn: number;
-    credit_received: number;
-    status: string;
-    payment_method: string;
-    payment_name: string;
-    payment_number?: string;
-    confirmation_name: string;
-    payment_instructions: string;
-}
-
 export default function WalletScreen({ onBack }: WalletScreenProps) {
     const [balance, setBalance] = useState<number>(0);
-    const [packages, setPackages] = useState<any[]>([]);
-    const [history, setHistory] = useState<any[]>([]);
+    const [packages, setPackages] = useState<CreditPackage[]>([]);
+    const [history, setHistory] = useState<WalletMovement[]>([]);
     const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
     const [loading, setLoading] = useState(true);
 
     // Modal states
-    const [selectedPackage, setSelectedPackage] = useState<any>(null);
+    const [selectedPackage, setSelectedPackage] = useState<CreditPackage | null>(null);
     const [selectedMethod, setSelectedMethod] = useState<string>('mpesa');
-    const [purchaseResult, setPurchaseResult] = useState<PurchaseResponse | null>(null);
+    const [purchaseResult, setPurchaseResult] = useState<CreditPurchaseResponse | null>(null);
     const [confirming, setConfirming] = useState(false);
     const [confirmed, setConfirmed] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -62,9 +37,16 @@ export default function WalletScreen({ onBack }: WalletScreenProps) {
                 creditsAPI.packages(),
                 walletAPI.history(),
             ]);
-            setBalance(balRes?.balance || balRes?.data?.balance || 0);
-            setPackages(pkgRes?.items || pkgRes?.data || pkgRes || []);
-            setHistory(histRes?.items || histRes?.data || histRes || []);
+
+            // Corrigir acesso aos dados
+            const balanceData = balRes?.balance_credit || balRes?.balance || 0;
+            setBalance(parseFloat(balanceData));
+
+            const packagesData = pkgRes?.items || pkgRes?.data || pkgRes || [];
+            setPackages(Array.isArray(packagesData) ? packagesData : []);
+
+            const historyData = histRes?.items || histRes?.data || histRes || [];
+            setHistory(Array.isArray(historyData) ? historyData : []);
         } catch (err) {
             console.error('Erro ao carregar wallet:', err);
         } finally {
@@ -75,7 +57,7 @@ export default function WalletScreen({ onBack }: WalletScreenProps) {
     const loadPaymentMethods = async () => {
         try {
             const res: any = await paymentsAPI.getMethods();
-            const methods = res?.data || res || [];
+            const methods = res?.data || res?.items || res || [];
             setPaymentMethods(Array.isArray(methods) ? methods : []);
         } catch (err) {
             console.error('Erro ao carregar métodos:', err);
@@ -155,7 +137,7 @@ export default function WalletScreen({ onBack }: WalletScreenProps) {
                         Comprar Créditos
                     </h3>
                     <div className="grid grid-cols-2 gap-2">
-                        {Array.isArray(packages) && packages.map((pkg: any) => (
+                        {packages.map((pkg) => (
                             <button
                                 key={pkg.id}
                                 onClick={() => setSelectedPackage(pkg)}
@@ -167,8 +149,8 @@ export default function WalletScreen({ onBack }: WalletScreenProps) {
                             >
                                 {pkg.name === 'Popular' && (
                                     <span className="absolute -top-2 right-2 bg-amber-500 text-[9px] font-bold text-black px-2 py-0.5 rounded-full">
-                    Popular
-                  </span>
+                                        Popular
+                                    </span>
                                 )}
                                 <p className="text-xs text-slate-400">{pkg.name}</p>
                                 <p className="text-lg font-bold text-white mt-1">
@@ -192,10 +174,10 @@ export default function WalletScreen({ onBack }: WalletScreenProps) {
                         Histórico
                     </h3>
                     <div className="space-y-2">
-                        {!Array.isArray(history) || history.length === 0 ? (
+                        {history.length === 0 ? (
                             <p className="text-xs text-slate-500 text-center py-4">Sem movimentos</p>
                         ) : (
-                            history.slice(0, 10).map((mov: any, i: number) => (
+                            history.slice(0, 10).map((mov, i) => (
                                 <div key={mov.id || i} className="bg-slate-900 border border-slate-800 rounded-lg p-3 flex items-center justify-between">
                                     <div>
                                         <p className="text-xs font-bold text-white">{mov.description || mov.movement_type}</p>
@@ -204,8 +186,8 @@ export default function WalletScreen({ onBack }: WalletScreenProps) {
                                         </p>
                                     </div>
                                     <span className={`text-sm font-bold ${parseFloat(mov.amount) > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {parseFloat(mov.amount) > 0 ? '+' : ''}{mov.amount} cr
-                  </span>
+                                        {parseFloat(mov.amount) > 0 ? '+' : ''}{mov.amount} cr
+                                    </span>
                                 </div>
                             ))
                         )}

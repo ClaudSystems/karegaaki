@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Package, Coins, Users, TrendingUp } from 'lucide-react';
+import { Package, Users, TrendingUp } from 'lucide-react';
 import apiClient from '../api/client';
 
 export default function Dashboard() {

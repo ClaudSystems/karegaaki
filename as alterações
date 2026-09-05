@@ -1,0 +1,14 @@
+warning: in the working copy of '.idea/workspace.xml', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'mobile-app/src/index.css', LF will be replaced by CRLF the next time Git touches it
+ .idea/vcs.xml                            |   1 [31m-[m
+ .idea/workspace.xml                      | 191 [32m+++[m[31m-------------------------[m
+ admin-panel/src/pages/CustomersPage.tsx  | 208 [32m+++++++++++++++++++[m[31m------------[m
+ admin-panel/src/pages/Dashboard.tsx      |   2 [32m+[m[31m-[m
+ admin-panel/src/stores/authStore.ts      |  99 [32m++++++++++++[m[31m---[m
+ mobile-app/src/components/BottomNav.tsx  |  20 [32m+[m[31m--[m
+ mobile-app/src/index.css                 | 153 [32m+++++++++++++++++++++++[m
+ mobile-app/src/screens/ProfileScreen.tsx | 128 [32m+++++++++[m[31m----------[m
+ mobile-app/src/screens/WalletScreen.tsx  |  68 [32m++++[m[31m------[m
+ mobile-app/src/types/index.ts            |  79 [32m++++++++++[m[31m--[m
+ mobile-app/src/utils/format.ts           |  24 [32m+++[m[31m-[m
+ 11 files changed, 566 insertions(+), 407 deletions(-)
