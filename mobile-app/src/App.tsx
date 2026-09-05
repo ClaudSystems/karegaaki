@@ -47,10 +47,11 @@ export default function App() {
 
   const renderScreen = () => {
     switch (screen) {
+
       case 'wallet':
         return <WalletScreen onBack={goToHome} />;
       case 'cart':
-        return <CartScreen onBack={goToHome} />;
+        return <CartScreen onBack={goToHome} onNavigateToWallet={() => setScreen('wallet')} />;
       case 'product_detail':
         return selectedProduct ? (
             <ProductDetailScreen
@@ -67,7 +68,15 @@ export default function App() {
             />
         );
       case 'transactions':
-        return <TransactionsScreen onBack={goToHome} />;
+        return (
+            <TransactionsScreen
+                onBack={goToHome}
+                onNavigateToDisputes={(reference) => {
+                  localStorage.setItem('dispute_reference', reference);
+                  setScreen('disputes');
+                }}
+            />
+        );
 
       case 'profile':
         return <ProfileScreen

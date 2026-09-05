@@ -4,10 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { useCartStore } from '../stores/cartStore';
 import { productsAPI } from '../api/client';
 import { Product, Category } from '../types';
-import { Search, ShoppingCart, ShoppingBag, X,Wallet } from 'lucide-react';
+import { Search, ShoppingCart, ShoppingBag, X, Wallet, TrendingUp, Clock, AlertTriangle } from 'lucide-react';
 import { walletAPI } from '../api/client';
-import { formatCredits, formatCurrency } from '../utils/format';
-
+import { formatCredits } from '../utils/format';
+import KaregaCard from '../components/KaregaCard';
 
 interface HomeScreenProps {
     onProductClick: (product: Product) => void;
@@ -15,24 +15,21 @@ interface HomeScreenProps {
     onWalletClick: () => void;
 }
 
-export default function HomeScreen({ onProductClick, onCartClick , onWalletClick}: HomeScreenProps) {
-    // Função para formatar número
-    const formatNumber = (value: number): string => {
-        return value.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-    };
+export default function HomeScreen({ onProductClick, onCartClick, onWalletClick }: HomeScreenProps) {
     const [products, setProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [search, setSearch] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string>('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [balance, setBalance] = useState<number>(0);
 
     const { addItem, count } = useCartStore();
-
 
     useEffect(() => {
         loadProducts();
         loadCategories();
+        loadBalance();
     }, [selectedCategory]);
 
     const loadProducts = async () => {
@@ -63,22 +60,6 @@ export default function HomeScreen({ onProductClick, onCartClick , onWalletClick
         }
     };
 
-    const handleSearch = (e: React.FormEvent) => {
-        e.preventDefault();
-        loadProducts();
-    };
-
-    const filteredProducts = products.filter((p) => p.is_active);
-    const [balance, setBalance] = useState<number>(0);
-
-    useEffect(() => {
-        loadBalance();
-    }, []);
-
-    // Adiciona state para forçar refresh
-    const [refreshKey, setRefreshKey] = useState(0);
-
-// Função loadBalance
     const loadBalance = async () => {
         try {
             const res: any = await walletAPI.balance();
@@ -88,32 +69,25 @@ export default function HomeScreen({ onProductClick, onCartClick , onWalletClick
         }
     };
 
-// useEffect que roda sempre que o componente monta
-    useEffect(() => {
-        loadBalance();
-    }, [refreshKey]);
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        loadProducts();
+    };
 
-
+    const filteredProducts = products.filter((p) => p.is_active);
 
     return (
-
         <div className="min-h-screen bg-slate-950 pb-20">
-            {/* Saldo + Status Bar (como no demo) */}
-            <div className="bg-slate-900 border-b border-slate-800 px-4 py-1.5 flex items-center justify-between text-[10px]">
-                <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-emerald-400" />
-                    <span className="text-slate-400">Saldo Disponível</span>
-                </div>
-                <span className="text-emerald-400 font-bold">{formatNumber(balance)} Créditos</span>
-            </div>            {/* Header */}
+            {/* KaregaCard Digital */}
+            <div className="px-4 pt-4">
+                <KaregaCard balance={balance} onRecharge={onWalletClick} />
+            </div>
+
+            {/* Header */}
             <div className="sticky top-0 z-10 bg-slate-950/95 backdrop-blur border-b border-slate-800 p-4">
-                {/* Header - dentro da div flex items-center justify-between */}
                 <div className="flex items-center justify-between mb-3">
                     <h1 className="text-lg font-bold text-white">KaregaAki</h1>
-
                     <div className="flex items-center gap-2">
-
-                        {/* Botão Wallet */}
                         <button
                             onClick={onWalletClick}
                             className="p-2 text-slate-400 hover:text-white transition"
@@ -121,13 +95,12 @@ export default function HomeScreen({ onProductClick, onCartClick , onWalletClick
                         >
                             <Wallet className="w-5 h-5" />
                         </button>
-                        {/* Botão Carrinho */}
                         <button onClick={onCartClick} className="relative p-2 text-slate-400 hover:text-white transition">
                             <ShoppingCart className="w-5 h-5" />
                             {count() > 0 && (
                                 <span className="absolute -top-1 -right-1 bg-indigo-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
-          {count()}
-        </span>
+                                    {count()}
+                                </span>
                             )}
                         </button>
                     </div>
@@ -199,74 +172,98 @@ export default function HomeScreen({ onProductClick, onCartClick , onWalletClick
                 </div>
             )}
 
-            {/* Products - Estilo do Demo */}
-            <div className="space-y-2.5 px-4">
+            {/* Products - Grid de 2 Colunas */}
+            <div className="grid grid-cols-2 gap-3 px-4">
                 {filteredProducts.map((product) => {
                     const isOutOfStock = product.stock_available <= 0;
+                    const isPopular = product.stock_available > 5;
+                    const isLowStock = product.stock_available <= 3 && product.stock_available > 0;
+
                     return (
                         <div
                             key={product.id}
                             onClick={() => onProductClick(product)}
-                            className={`bg-slate-900 border rounded-xl p-3 flex gap-3 cursor-pointer transition ${
+                            className={`relative bg-slate-900 border rounded-2xl overflow-hidden cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-xl group ${
                                 isOutOfStock
-                                    ? 'border-red-900/40 opacity-90 hover:border-red-700/60'
-                                    : 'border-slate-800/90 hover:border-slate-700'
+                                    ? 'border-red-900/40 opacity-80'
+                                    : 'border-slate-800 hover:border-slate-600'
                             }`}
                         >
-                            <div className="relative shrink-0">
+                            {/* Badges */}
+                            <div className="absolute top-2 left-2 z-10 flex flex-col gap-1">
+                                {isPopular && !isOutOfStock && (
+                                    <span className="px-2 py-0.5 bg-amber-500 text-black text-[8px] font-black uppercase rounded-full flex items-center gap-1">
+                                        <TrendingUp className="w-2.5 h-2.5" />
+                                        Popular
+                                    </span>
+                                )}
+                                {isLowStock && !isOutOfStock && (
+                                    <span className="px-2 py-0.5 bg-orange-500 text-white text-[8px] font-black uppercase rounded-full flex items-center gap-1">
+                                        <Clock className="w-2.5 h-2.5" />
+                                        Últimas unidades
+                                    </span>
+                                )}
+                                {isOutOfStock && (
+                                    <span className="px-2 py-0.5 bg-red-600 text-white text-[8px] font-black uppercase rounded-full flex items-center gap-1">
+                                        <AlertTriangle className="w-2.5 h-2.5" />
+                                        Esgotado
+                                    </span>
+                                )}
+                            </div>
+
+                            {/* Image */}
+                            <div className="relative aspect-square bg-slate-800 overflow-hidden max-h-28">
                                 {product.image_url ? (
-                                    <img src={product.image_url} alt={product.name} className="w-13 h-13 rounded-lg object-cover bg-slate-800" />
+                                    <img
+                                        src={product.image_url}
+                                        alt={product.name}
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                    />
                                 ) : (
-                                    <div className="w-13 h-13 rounded-lg bg-slate-800 flex items-center justify-center">
-                                        <ShoppingBag className="w-5 h-5 text-slate-600" />
+                                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900">
+                                        <ShoppingBag className="w-8 h-8 text-slate-600 group-hover:text-slate-500 transition" />
                                     </div>
                                 )}
                                 {isOutOfStock && (
-                                    <div className="absolute inset-0 bg-black/60 rounded-lg flex items-center justify-center">
-                    <span className="text-[8px] font-black text-red-400 uppercase tracking-tighter bg-red-950/90 px-1 py-0.5 rounded border border-red-800">
-                      Esgotado
-                    </span>
+                                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                        <span className="text-[10px] font-black text-red-400 uppercase">Indisponível</span>
                                     </div>
                                 )}
                             </div>
 
-                            <div className="flex-1 flex flex-col justify-between min-w-0">
-                                <div>
-                                    <div className="flex items-center justify-between gap-1">
-                    <span className="text-[9px] font-bold text-indigo-400 uppercase truncate">
-                      {product.category_name || 'Geral'}
-                    </span>
-                                        {isOutOfStock ? (
-                                            <span className="text-[9px] font-bold text-red-400 bg-red-950/80 px-1.5 py-0.5 rounded border border-red-800 shrink-0">
-                        0 em Stock
-                      </span>
-                                        ) : (
-                                            <span className="text-[10px] text-slate-500 shrink-0">Stock: {product.stock_available}</span>
-                                        )}
-                                    </div>
-                                    <h4 className="text-xs font-bold text-white line-clamp-1 mt-0.5">{product.name}</h4>
+                            {/* Info */}
+                            <div className="p-2">
+                                <div className="flex items-center justify-between mb-1">
+                                    <span className="text-[8px] font-bold text-indigo-400 uppercase truncate">
+                                        {product.category_name || 'Geral'}
+                                    </span>
+                                    {!isOutOfStock && (
+                                        <span className="text-[8px] text-slate-500 shrink-0 ml-1">
+                                            {product.stock_available} un.
+                                        </span>
+                                    )}
                                 </div>
 
-                                <div className="flex items-center justify-between pt-1">
-                                    <span className="text-xs font-bold text-emerald-400">{formatCredits(product.credit_price)} cr</span>
-                                    <div className="flex items-center gap-1.5">
-                                        {!isOutOfStock && (
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); addItem(product); }}
-                                                className="px-2 py-1 bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-700/80 text-indigo-300 rounded-lg text-[10px] font-bold flex items-center gap-1 cursor-pointer transition shadow-sm"
-                                            >
-                                                <ShoppingCart className="w-3 h-3 text-indigo-400" /> + Carrinho
-                                            </button>
-                                        )}
+                                <h4 className="text-[10px] font-bold text-white line-clamp-2 mb-1 min-h-[1.5rem]">
+                                    {product.name}
+                                </h4>
+
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-black text-emerald-400">
+                                        {formatCredits(product.credit_price)} cr
+                                    </span>
+                                    {!isOutOfStock && (
                                         <button
-                                            onClick={(e) => { e.stopPropagation(); onProductClick(product); }}
-                                            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition ${
-                                                isOutOfStock ? 'bg-red-950/90 hover:bg-red-900 text-red-300 border border-red-800/80' : 'bg-indigo-600 hover:bg-indigo-500 text-white'
-                                            }`}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                addItem(product);
+                                            }}
+                                            className="p-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition shadow-lg shadow-indigo-600/30 active:scale-90"
+                                            title="Adicionar ao carrinho"
                                         >
-                                            {isOutOfStock ? 'Esgotado' : 'Ver'}
+                                            <ShoppingCart className="w-3.5 h-3.5" />
                                         </button>
-                                    </div>
+                                    )}
                                 </div>
                             </div>
                         </div>

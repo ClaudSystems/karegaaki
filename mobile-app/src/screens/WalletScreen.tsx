@@ -1,27 +1,57 @@
 // src/screens/WalletScreen.tsx
 import React, { useState, useEffect } from 'react';
-import { formatCredits } from '../utils/format';
+import { formatCredits, formatCurrency } from '../utils/format';
 import { walletAPI, creditsAPI, paymentsAPI } from '../api/client';
-import { ArrowLeft, Wallet, Plus, Clock, CheckCircle, X, Smartphone } from 'lucide-react';
-import { CreditPackage, PaymentMethod, WalletMovement, CreditPurchaseResponse } from '../types';
+import {
+    ArrowLeft, Wallet, Plus, Clock, CheckCircle, X, Smartphone,
+    Copy, Check, Loader, Shield
+} from 'lucide-react';
 
 interface WalletScreenProps {
     onBack: () => void;
 }
 
+interface PaymentMethod {
+    id: string;
+    name: string;
+    icon: string;
+    color: string;
+    bg: string;
+    enabled: boolean;
+    confirmation_name: string;
+    number?: string;
+    instructions: string[];
+    reference_format: string;
+    note: string;
+}
+
+interface PurchaseResponse {
+    id: string;
+    reference: string;
+    amount_mzn: string;
+    credit_received: string;
+    status: string;
+    payment_method: string;
+    payment_name?: string;
+    payment_number?: string;
+    confirmation_name?: string;
+    payment_instructions?: string;
+}
+
 export default function WalletScreen({ onBack }: WalletScreenProps) {
     const [balance, setBalance] = useState<number>(0);
-    const [packages, setPackages] = useState<CreditPackage[]>([]);
-    const [history, setHistory] = useState<WalletMovement[]>([]);
+    const [packages, setPackages] = useState<any[]>([]);
+    const [history, setHistory] = useState<any[]>([]);
     const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
     const [loading, setLoading] = useState(true);
 
     // Modal states
-    const [selectedPackage, setSelectedPackage] = useState<CreditPackage | null>(null);
+    const [selectedPackage, setSelectedPackage] = useState<any>(null);
     const [selectedMethod, setSelectedMethod] = useState<string>('mpesa');
-    const [purchaseResult, setPurchaseResult] = useState<CreditPurchaseResponse | null>(null);
+    const [step, setStep] = useState<'select' | 'waiting' | 'confirmed'>('select');
+    const [purchaseResult, setPurchaseResult] = useState<PurchaseResponse | null>(null);
     const [confirming, setConfirming] = useState(false);
-    const [confirmed, setConfirmed] = useState(false);
+    const [copied, setCopied] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -37,14 +67,9 @@ export default function WalletScreen({ onBack }: WalletScreenProps) {
                 creditsAPI.packages(),
                 walletAPI.history(),
             ]);
-
-            // Corrigir acesso aos dados
-            const balanceData = balRes?.balance_credit || balRes?.balance || 0;
-            setBalance(parseFloat(balanceData));
-
+            setBalance(parseFloat(balRes?.balance_credit || balRes?.balance || 0));
             const packagesData = pkgRes?.items || pkgRes?.data || pkgRes || [];
             setPackages(Array.isArray(packagesData) ? packagesData : []);
-
             const historyData = histRes?.items || histRes?.data || histRes || [];
             setHistory(Array.isArray(historyData) ? historyData : []);
         } catch (err) {
@@ -71,6 +96,7 @@ export default function WalletScreen({ onBack }: WalletScreenProps) {
             const res: any = await creditsAPI.purchase(selectedPackage.id, selectedMethod);
             const data = res?.data || res;
             setPurchaseResult(data);
+            setStep('waiting');
         } catch (err: any) {
             setError(err?.detail || 'Erro ao processar compra');
         }
@@ -81,8 +107,8 @@ export default function WalletScreen({ onBack }: WalletScreenProps) {
         setConfirming(true);
         try {
             await paymentsAPI.confirmPurchase(purchaseResult.reference);
-            setConfirmed(true);
-            await loadData(); // Recarrega saldo
+            setStep('confirmed');
+            await loadData();
         } catch (err: any) {
             setError(err?.detail || 'Erro ao confirmar pagamento');
         } finally {
@@ -90,12 +116,24 @@ export default function WalletScreen({ onBack }: WalletScreenProps) {
         }
     };
 
+    const handleCopyReference = async () => {
+        if (!purchaseResult) return;
+        try {
+            await navigator.clipboard.writeText(purchaseResult.reference);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+            console.error('Erro ao copiar:', err);
+        }
+    };
+
     const closeModal = () => {
         setSelectedPackage(null);
         setSelectedMethod('mpesa');
+        setStep('select');
         setPurchaseResult(null);
-        setConfirmed(false);
         setError(null);
+        setCopied(false);
     };
 
     const selectedPaymentMethod = paymentMethods.find(m => m.id === selectedMethod);
@@ -122,12 +160,13 @@ export default function WalletScreen({ onBack }: WalletScreenProps) {
 
             <div className="p-4 space-y-4">
                 {/* Saldo */}
-                <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 rounded-2xl p-6 text-white">
-                    <div className="flex items-center gap-2 mb-2">
-                        <Wallet className="w-4 h-4 text-indigo-300" />
+                <div className="bg-gradient-to-br from-indigo-600 to-emerald-700 rounded-2xl p-5 text-white shadow-xl shadow-indigo-600/20">
+                    <div className="flex items-center gap-2 mb-1">
+                        <Wallet className="w-4 h-4 text-indigo-200" />
                         <span className="text-xs text-indigo-200">Saldo Disponível</span>
                     </div>
-                    <p className="text-3xl font-bold">{formatCredits(balance)} <span className="text-lg">cr</span></p>
+                    <p className="text-3xl font-black">{formatCredits(balance)} <span className="text-lg font-bold">cr</span></p>
+                    <p className="text-xs text-indigo-200 mt-1">≈ {formatCurrency(balance * 10)} MZN</p>
                 </div>
 
                 {/* Comprar Créditos */}
@@ -140,10 +179,13 @@ export default function WalletScreen({ onBack }: WalletScreenProps) {
                         {packages.map((pkg) => (
                             <button
                                 key={pkg.id}
-                                onClick={() => setSelectedPackage(pkg)}
+                                onClick={() => {
+                                    setSelectedPackage(pkg);
+                                    setStep('select');
+                                }}
                                 className={`relative p-3 rounded-xl border text-left transition ${
                                     pkg.name === 'Popular'
-                                        ? 'bg-indigo-950/50 border-indigo-700/50'
+                                        ? 'bg-indigo-950/50 border-indigo-700/50 shadow-lg shadow-indigo-600/10'
                                         : 'bg-slate-900 border-slate-800 hover:border-slate-700'
                                 }`}
                             >
@@ -195,14 +237,16 @@ export default function WalletScreen({ onBack }: WalletScreenProps) {
                 </div>
             </div>
 
-            {/* Modal de Compra */}
+            {/* Modal */}
             {selectedPackage && (
                 <div className="fixed inset-0 z-50 bg-black/70 flex items-end sm:items-center justify-center p-4">
                     <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm max-h-[90vh] overflow-y-auto">
-                        {/* Header do Modal */}
-                        <div className="sticky top-0 bg-slate-900 border-b border-slate-800 p-4 flex items-center justify-between rounded-t-2xl">
+                        {/* Header */}
+                        <div className="sticky top-0 bg-slate-900 border-b border-slate-800 p-4 flex items-center justify-between rounded-t-2xl z-10">
                             <h2 className="text-sm font-bold text-white">
-                                {purchaseResult ? 'Pagamento' : confirmed ? 'Confirmado!' : 'Comprar Créditos'}
+                                {step === 'select' && 'Comprar Créditos'}
+                                {step === 'waiting' && 'Pagamento Pendente'}
+                                {step === 'confirmed' && 'Confirmado!'}
                             </h2>
                             <button onClick={closeModal} className="text-slate-400 hover:text-white">
                                 <X className="w-5 h-5" />
@@ -210,7 +254,8 @@ export default function WalletScreen({ onBack }: WalletScreenProps) {
                         </div>
 
                         <div className="p-4 space-y-4">
-                            {!purchaseResult && !confirmed && (
+                            {/* ETAPA 1: Seleção */}
+                            {step === 'select' && (
                                 <>
                                     {/* Pacote selecionado */}
                                     <div className="bg-slate-800 rounded-xl p-3">
@@ -231,22 +276,22 @@ export default function WalletScreen({ onBack }: WalletScreenProps) {
                                                     onClick={() => setSelectedMethod(method.id)}
                                                     className={`w-full p-3 rounded-xl border text-left flex items-center gap-3 transition ${
                                                         selectedMethod === method.id
-                                                            ? 'border-indigo-500 bg-indigo-950/30'
+                                                            ? 'border-indigo-500 bg-indigo-950/30 shadow-lg shadow-indigo-600/10'
                                                             : 'border-slate-800 hover:border-slate-700'
                                                     }`}
                                                 >
                                                     <div
-                                                        className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold"
-                                                        style={{ backgroundColor: method.color }}
+                                                        className="w-10 h-10 rounded-lg flex items-center justify-center text-white text-sm font-black"
+                                                        style={{ backgroundColor: method.color || '#6366f1' }}
                                                     >
                                                         {method.icon === 'mpesa' ? 'M' : method.icon === 'emola' ? 'E' : 'm'}
                                                     </div>
                                                     <div className="flex-1">
-                                                        <p className="text-xs font-bold text-white">{method.name}</p>
+                                                        <p className="text-sm font-bold text-white">{method.name}</p>
                                                         <p className="text-[10px] text-slate-400">{method.confirmation_name}</p>
                                                     </div>
                                                     {selectedMethod === method.id && (
-                                                        <CheckCircle className="w-4 h-4 text-indigo-400" />
+                                                        <CheckCircle className="w-5 h-5 text-indigo-400" />
                                                     )}
                                                 </button>
                                             ))}
@@ -259,22 +304,29 @@ export default function WalletScreen({ onBack }: WalletScreenProps) {
 
                                     <button
                                         onClick={handleBuyCredits}
-                                        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-lg transition text-sm"
+                                        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition text-sm shadow-lg shadow-indigo-600/30"
                                     >
                                         Continuar para Pagamento
                                     </button>
                                 </>
                             )}
 
-                            {/* Instruções de Pagamento */}
-                            {purchaseResult && !confirmed && (
+                            {/* ETAPA 2: Aguardando Push USSD */}
+                            {step === 'waiting' && purchaseResult && (
                                 <>
-                                    <div className="bg-amber-950/30 border border-amber-800/50 rounded-xl p-4 text-center">
-                                        <Smartphone className="w-8 h-8 text-amber-400 mx-auto mb-2" />
-                                        <p className="text-amber-300 font-bold text-sm">Pagamento Pendente</p>
-                                        <p className="text-amber-200/70 text-xs mt-1">{purchaseResult.payment_instructions}</p>
+                                    <div className="text-center space-y-3">
+                                        <div className="w-16 h-16 bg-amber-950/50 rounded-full flex items-center justify-center mx-auto animate-pulse-glow">
+                                            <Smartphone className="w-8 h-8 text-amber-400 animate-float" />
+                                        </div>
+                                        <div>
+                                            <p className="text-amber-300 font-bold text-sm">Push USSD Enviado!</p>
+                                            <p className="text-slate-400 text-xs mt-1">
+                                                Verifique o seu telemóvel e insira o PIN da sua carteira móvel
+                                            </p>
+                                        </div>
                                     </div>
 
+                                    {/* Referência */}
                                     <div className="bg-slate-800 rounded-xl p-3 space-y-2">
                                         <div className="flex justify-between text-xs">
                                             <span className="text-slate-400">Referência</span>
@@ -285,27 +337,21 @@ export default function WalletScreen({ onBack }: WalletScreenProps) {
                                             <span className="text-white font-bold">{purchaseResult.amount_mzn} MZN</span>
                                         </div>
                                         <div className="flex justify-between text-xs">
-                                            <span className="text-slate-400">Método</span>
-                                            <span className="text-white">{purchaseResult.confirmation_name}</span>
+                                            <span className="text-slate-400">Créditos a receber</span>
+                                            <span className="text-emerald-400 font-bold">+{purchaseResult.credit_received} cr</span>
                                         </div>
-                                        {purchaseResult.payment_number && (
-                                            <div className="flex justify-between text-xs">
-                                                <span className="text-slate-400">Número</span>
-                                                <span className="text-white font-mono">{purchaseResult.payment_number}</span>
-                                            </div>
-                                        )}
                                     </div>
 
-                                    {selectedPaymentMethod?.instructions && (
-                                        <div className="bg-slate-800 rounded-xl p-3">
-                                            <p className="text-xs text-slate-400 mb-2">Instruções:</p>
-                                            <ol className="text-[10px] text-slate-300 space-y-1 list-decimal list-inside">
-                                                {selectedPaymentMethod.instructions.map((inst, i) => (
-                                                    <li key={i}>{inst}</li>
-                                                ))}
-                                            </ol>
-                                        </div>
-                                    )}
+                                    {/* Instruções */}
+                                    <div className="bg-slate-800 rounded-xl p-3">
+                                        <p className="text-xs text-slate-400 mb-2">Como confirmar:</p>
+                                        <ol className="text-[11px] text-slate-300 space-y-1.5 list-decimal list-inside">
+                                            <li>Abra o menu USSD no seu telemóvel</li>
+                                            <li>Digite o PIN da sua carteira {selectedPaymentMethod?.name}</li>
+                                            <li>Aguarde a mensagem de confirmação</li>
+                                            <li>Clique em "Confirmar Pagamento" abaixo</li>
+                                        </ol>
+                                    </div>
 
                                     {error && (
                                         <p className="text-red-400 text-xs bg-red-950/50 p-3 rounded-lg">{error}</p>
@@ -314,10 +360,13 @@ export default function WalletScreen({ onBack }: WalletScreenProps) {
                                     <button
                                         onClick={handleConfirmPayment}
                                         disabled={confirming}
-                                        className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 text-white font-bold py-3 rounded-lg transition text-sm flex items-center justify-center gap-2"
+                                        className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 text-white font-bold py-3 rounded-xl transition text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30"
                                     >
                                         {confirming ? (
-                                            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            <>
+                                                <Loader className="w-4 h-4 animate-spin" />
+                                                Confirmando...
+                                            </>
                                         ) : (
                                             <>
                                                 <CheckCircle className="w-4 h-4" />
@@ -328,19 +377,19 @@ export default function WalletScreen({ onBack }: WalletScreenProps) {
                                 </>
                             )}
 
-                            {/* Sucesso */}
-                            {confirmed && (
+                            {/* ETAPA 3: Confirmado */}
+                            {step === 'confirmed' && (
                                 <div className="text-center space-y-3">
-                                    <div className="w-12 h-12 bg-emerald-950 rounded-full flex items-center justify-center mx-auto">
-                                        <CheckCircle className="w-6 h-6 text-emerald-400" />
+                                    <div className="w-16 h-16 bg-emerald-950 rounded-full flex items-center justify-center mx-auto">
+                                        <CheckCircle className="w-8 h-8 text-emerald-400" />
                                     </div>
-                                    <p className="text-emerald-300 font-bold">Créditos Adicionados!</p>
+                                    <p className="text-emerald-300 font-bold text-lg">Créditos Adicionados!</p>
                                     <p className="text-xs text-slate-400">
                                         +{purchaseResult?.credit_received} créditos na sua carteira
                                     </p>
                                     <button
                                         onClick={closeModal}
-                                        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-lg transition text-sm"
+                                        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition text-sm shadow-lg shadow-indigo-600/30"
                                     >
                                         Fechar
                                     </button>
