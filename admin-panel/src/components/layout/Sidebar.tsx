@@ -1,12 +1,13 @@
 import { NavLink } from 'react-router-dom';
 import {
-    LayoutDashboard, Package, Coins, ArrowLeftRight,AlertTriangle,
+    LayoutDashboard, Package, Coins, ArrowLeftRight, AlertTriangle,
     Truck, Settings, Radio, Shield, UserCheck,
 } from 'lucide-react';
 
 const menuItems = [
     { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/products', icon: Package, label: 'Produtos' },
+    { to: '/stock', icon: Package, label: 'Stock' },
     { to: '/credits', icon: Coins, label: 'Créditos' },
     { to: '/transactions', icon: ArrowLeftRight, label: 'Transações' },
     { to: '/customers', icon: UserCheck, label: 'Clientes' },

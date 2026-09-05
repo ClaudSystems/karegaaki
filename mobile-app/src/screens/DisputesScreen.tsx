@@ -1,9 +1,9 @@
 // src/screens/DisputesScreen.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { disputesAPI } from '../api/client';
 import {
     ArrowLeft, MessageSquare, AlertCircle, CheckCircle,
-    Clock, Send, RefreshCw, Phone, Shield
+    Clock, Send, RefreshCw, Phone, Shield, X, RotateCcw
 } from 'lucide-react';
 
 interface DisputesScreenProps {
@@ -17,7 +17,16 @@ interface Dispute {
     description: string;
     status: string;
     created_at: string;
-    resolution?: string;
+    admin_response?: string;
+    reopen_count?: number;
+}
+
+interface ChatMessage {
+    id: string;
+    sender_type: 'client' | 'admin';
+    sender_id: string | null;
+    message: string;
+    created_at: string;
 }
 
 export default function DisputesScreen({ onBack }: DisputesScreenProps) {
@@ -33,9 +42,21 @@ export default function DisputesScreen({ onBack }: DisputesScreenProps) {
         transaction_reference: '',
     });
 
+    // Chat states
+    const [activeChat, setActiveChat] = useState<Dispute | null>(null);
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
+    const [newMessage, setNewMessage] = useState('');
+    const [sendingMessage, setSendingMessage] = useState(false);
+    const [loadingMessages, setLoadingMessages] = useState(false);
+    const bottomRef = useRef<HTMLDivElement>(null);
+
+    // Reopen states
+    const [showReopen, setShowReopen] = useState(false);
+    const [reopenReason, setReopenReason] = useState('');
+    const [reopening, setReopening] = useState(false);
+
     useEffect(() => {
         loadDisputes();
-        // Auto-preencher referência se veio de uma transação
         const savedReference = localStorage.getItem('dispute_reference');
         if (savedReference) {
             setFormData(prev => ({ ...prev, transaction_reference: savedReference }));
@@ -43,6 +64,10 @@ export default function DisputesScreen({ onBack }: DisputesScreenProps) {
             localStorage.removeItem('dispute_reference');
         }
     }, []);
+
+    useEffect(() => {
+        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
 
     const loadDisputes = async () => {
         setLoading(true);
@@ -55,6 +80,55 @@ export default function DisputesScreen({ onBack }: DisputesScreenProps) {
             setError('Erro ao carregar disputas');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const loadMessages = async (disputeId: string) => {
+        setLoadingMessages(true);
+        try {
+            const res: any = await disputesAPI.getMessages(disputeId);
+            setMessages(res?.items || []);
+        } catch {
+            setMessages([]);
+        } finally {
+            setLoadingMessages(false);
+        }
+    };
+
+    const handleOpenChat = (dispute: Dispute) => {
+        setActiveChat(dispute);
+        loadMessages(dispute.id);
+    };
+
+    const handleSendMessage = async () => {
+        if (!activeChat || !newMessage.trim()) return;
+        setSendingMessage(true);
+        try {
+            await disputesAPI.sendMessage(activeChat.id, newMessage.trim());
+            setNewMessage('');
+            await loadMessages(activeChat.id);
+        } catch {
+            setError('Erro ao enviar mensagem');
+        } finally {
+            setSendingMessage(false);
+        }
+    };
+
+    const handleReopen = async () => {
+        if (!activeChat || !reopenReason.trim()) return;
+        setReopening(true);
+        try {
+            await disputesAPI.reopen(activeChat.id, reopenReason.trim());
+            setSuccess('Disputa reaberta com sucesso!');
+            setShowReopen(false);
+            setReopenReason('');
+            setActiveChat(null);
+            loadDisputes();
+            setTimeout(() => setSuccess(null), 3000);
+        } catch (err: any) {
+            setError(err?.detail || 'Erro ao reabrir disputa');
+        } finally {
+            setReopening(false);
         }
     };
 
@@ -82,17 +156,13 @@ export default function DisputesScreen({ onBack }: DisputesScreenProps) {
             setTimeout(() => setSuccess(null), 3000);
         } catch (err: any) {
             let errorMessage = 'Erro ao submeter disputa';
-
             if (err?.detail) {
                 if (typeof err.detail === 'string') {
                     errorMessage = err.detail;
                 } else if (Array.isArray(err.detail)) {
                     errorMessage = err.detail.map((d: any) => d.msg || 'Erro de validação').join(', ');
                 }
-            } else if (err?.message) {
-                errorMessage = err.message;
             }
-
             setError(errorMessage);
         } finally {
             setSubmitting(false);
@@ -101,14 +171,23 @@ export default function DisputesScreen({ onBack }: DisputesScreenProps) {
 
     const getStatusBadge = (status: string) => {
         switch (status) {
-            case 'resolved':
+            case 'resolved_refunded':
+            case 'resolved_resent':
                 return (
                     <span className="flex items-center gap-1 text-emerald-400 bg-emerald-950/50 px-2 py-0.5 rounded-full text-[10px] font-bold">
                         <CheckCircle className="w-3 h-3" />
                         Resolvida
                     </span>
                 );
+            case 'resolved_rejected':
+                return (
+                    <span className="flex items-center gap-1 text-red-400 bg-red-950/50 px-2 py-0.5 rounded-full text-[10px] font-bold">
+                        <AlertCircle className="w-3 h-3" />
+                        Rejeitada
+                    </span>
+                );
             case 'open':
+            case 'under_review':
             case 'pending':
                 return (
                     <span className="flex items-center gap-1 text-amber-400 bg-amber-950/50 px-2 py-0.5 rounded-full text-[10px] font-bold">
@@ -116,21 +195,24 @@ export default function DisputesScreen({ onBack }: DisputesScreenProps) {
                         Pendente
                     </span>
                 );
-            case 'rejected':
+            case 'reopened':
                 return (
-                    <span className="flex items-center gap-1 text-red-400 bg-red-950/50 px-2 py-0.5 rounded-full text-[10px] font-bold">
-                        <AlertCircle className="w-3 h-3" />
-                        Rejeitada
+                    <span className="flex items-center gap-1 text-orange-400 bg-orange-950/50 px-2 py-0.5 rounded-full text-[10px] font-bold">
+                        <RotateCcw className="w-3 h-3" />
+                        Reaberta
                     </span>
                 );
             default:
                 return (
                     <span className="flex items-center gap-1 text-slate-400 bg-slate-800 px-2 py-0.5 rounded-full text-[10px] font-bold">
-                        <Clock className="w-3 h-3" />
                         {status}
                     </span>
                 );
         }
+    };
+
+    const canReopen = (status: string) => {
+        return ['resolved_refunded', 'resolved_resent', 'resolved_rejected', 'closed'].includes(status);
     };
 
     if (loading) {
@@ -159,7 +241,6 @@ export default function DisputesScreen({ onBack }: DisputesScreenProps) {
             </div>
 
             <div className="p-4 space-y-4">
-                {/* Success Message */}
                 {success && (
                     <div className="flex items-center gap-2 text-emerald-400 text-xs bg-emerald-950/50 border border-emerald-900/50 p-3 rounded-xl animate-slide-up">
                         <CheckCircle className="w-4 h-4 shrink-0" />
@@ -167,7 +248,6 @@ export default function DisputesScreen({ onBack }: DisputesScreenProps) {
                     </div>
                 )}
 
-                {/* Botão Nova Disputa */}
                 <button
                     onClick={() => setShowForm(!showForm)}
                     className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition text-sm flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30"
@@ -176,7 +256,6 @@ export default function DisputesScreen({ onBack }: DisputesScreenProps) {
                     {showForm ? 'Fechar Formulário' : 'Nova Disputa'}
                 </button>
 
-                {/* Formulário */}
                 {showForm && (
                     <form onSubmit={handleSubmit} className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3 animate-slide-up">
                         <div>
@@ -272,12 +351,37 @@ export default function DisputesScreen({ onBack }: DisputesScreenProps) {
                             <p className="text-[10px] text-slate-600 mt-2">
                                 {new Date(dispute.created_at).toLocaleDateString('pt-PT')}
                             </p>
-                            {dispute.resolution && (
+                            {dispute.admin_response && (
                                 <div className="mt-2 p-2 bg-emerald-950/30 border border-emerald-900/30 rounded-lg">
-                                    <p className="text-[10px] text-emerald-400 font-bold mb-0.5">Resolução:</p>
-                                    <p className="text-xs text-emerald-300">{dispute.resolution}</p>
+                                    <p className="text-[10px] text-emerald-400 font-bold mb-0.5">Resposta do Admin:</p>
+                                    <p className="text-xs text-emerald-300">{dispute.admin_response}</p>
                                 </div>
                             )}
+                            {(dispute.reopen_count || 0) > 0 && (
+                                <p className="text-[10px] text-orange-400 mt-1">
+                                    Reaberta {dispute.reopen_count} vez(es)
+                                </p>
+                            )}
+
+                            {/* Botões de ação */}
+                            <div className="flex gap-2 mt-3">
+                                <button
+                                    onClick={() => handleOpenChat(dispute)}
+                                    className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-1"
+                                >
+                                    <MessageSquare className="w-3.5 h-3.5" />
+                                    Mensagens
+                                </button>
+                                {canReopen(dispute.status) && (
+                                    <button
+                                        onClick={() => { setActiveChat(dispute); setShowReopen(true); }}
+                                        className="flex-1 bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-1"
+                                    >
+                                        <RotateCcw className="w-3.5 h-3.5" />
+                                        Reabrir
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     ))}
                 </div>
@@ -289,9 +393,117 @@ export default function DisputesScreen({ onBack }: DisputesScreenProps) {
                         <Phone className="w-4 h-4 text-emerald-400" />
                         <span>+258 84 123 4567</span>
                     </div>
-                    <p className="text-[10px] text-slate-500 mt-1">Disponível 24/7 para emergências</p>
                 </div>
             </div>
+
+            {/* Chat Slideover */}
+            {activeChat && !showReopen && (
+                <div className="fixed inset-0 z-50 bg-black/70 flex items-end sm:items-center justify-center p-4">
+                    <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md max-h-[85vh] flex flex-col">
+                        {/* Chat Header */}
+                        <div className="flex items-center justify-between p-4 border-b border-slate-800">
+                            <div>
+                                <h3 className="text-sm font-bold text-white">Conversa</h3>
+                                <p className="text-[10px] text-slate-500 font-mono">{activeChat.reference}</p>
+                            </div>
+                            <button onClick={() => setActiveChat(null)} className="text-slate-400 hover:text-white">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Messages */}
+                        <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                            {loadingMessages ? (
+                                <div className="flex justify-center py-6">
+                                    <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                                </div>
+                            ) : messages.length === 0 ? (
+                                <p className="text-center text-xs text-slate-500 py-6">Nenhuma mensagem</p>
+                            ) : (
+                                messages.map((msg) => (
+                                    <div
+                                        key={msg.id}
+                                        className={`flex ${msg.sender_type === 'client' ? 'justify-end' : 'justify-start'}`}
+                                    >
+                                        <div
+                                            className={`max-w-[80%] rounded-2xl px-3 py-2 ${
+                                                msg.sender_type === 'client'
+                                                    ? 'bg-indigo-600 text-white rounded-br-sm'
+                                                    : 'bg-slate-800 text-slate-200 rounded-bl-sm'
+                                            }`}
+                                        >
+                                            <p className="text-xs whitespace-pre-wrap">{msg.message}</p>
+                                            <p className={`text-[9px] mt-1 ${msg.sender_type === 'client' ? 'text-indigo-200' : 'text-slate-500'}`}>
+                                                {new Date(msg.created_at).toLocaleString('pt-PT')}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                            <div ref={bottomRef} />
+                        </div>
+
+                        {/* Input */}
+                        <div className="p-3 border-t border-slate-800">
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={newMessage}
+                                    onChange={(e) => setNewMessage(e.target.value)}
+                                    placeholder="Escreva uma mensagem..."
+                                    className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-xs focus:border-indigo-500 focus:outline-none"
+                                />
+                                <button
+                                    onClick={handleSendMessage}
+                                    disabled={sendingMessage || !newMessage.trim()}
+                                    className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 text-white p-2 rounded-lg"
+                                >
+                                    {sendingMessage ? (
+                                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin block" />
+                                    ) : (
+                                        <Send className="w-4 h-4" />
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Reopen Modal */}
+            {showReopen && activeChat && (
+                <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
+                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 w-full max-w-sm">
+                        <h3 className="text-sm font-bold text-white mb-3">Reabrir Disputa</h3>
+                        <p className="text-xs text-slate-400 mb-3">
+                            {activeChat.reference} - {activeChat.dispute_type}
+                        </p>
+                        <label className="block text-xs text-slate-400 mb-1.5">Motivo da Reabertura</label>
+                        <textarea
+                            value={reopenReason}
+                            onChange={(e) => setReopenReason(e.target.value)}
+                            rows={3}
+                            placeholder="Explique por que não ficou satisfeito..."
+                            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:outline-none resize-none"
+                        />
+                        <div className="flex gap-2 mt-4">
+                            <button
+                                onClick={() => { setShowReopen(false); setReopenReason(''); }}
+                                className="flex-1 bg-slate-700 hover:bg-slate-600 text-white text-xs font-medium py-2.5 rounded-lg"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleReopen}
+                                disabled={reopening || !reopenReason.trim()}
+                                className="flex-1 bg-orange-600 hover:bg-orange-500 disabled:bg-slate-700 text-white text-xs font-bold py-2.5 rounded-lg flex items-center justify-center gap-1"
+                            >
+                                {reopening ? 'Reabrindo...' : 'Reabrir'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

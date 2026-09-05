@@ -23,7 +23,31 @@ api.interceptors.response.use(
             localStorage.removeItem('token');
             window.location.href = '/';
         }
-        return Promise.reject(err.response?.data || err);
+
+        let errorMessage = 'Erro desconhecido';
+
+        if (err.response?.data) {
+            const data = err.response.data;
+
+            if (typeof data === 'string') {
+                errorMessage = data;
+            } else if (data.detail) {
+                if (typeof data.detail === 'string') {
+                    errorMessage = data.detail;
+                } else if (Array.isArray(data.detail)) {
+                    errorMessage = data.detail.map((d: any) => d.msg).join(', ');
+                }
+            } else if (Array.isArray(data)) {
+                errorMessage = data.map((d: any) => d.msg).join(', ');
+            } else if (data.message) {
+                errorMessage = data.message;
+            }
+        }
+
+        return Promise.reject({
+            detail: errorMessage,
+            status: err.response?.status
+        });
     }
 );
 
@@ -71,6 +95,11 @@ export const kycAPI = {
 export const disputesAPI = {
     create: (data: any) => api.post('/disputes', data),
     my: () => api.get('/disputes/my'),
+    getMessages: (disputeId: string) => api.get(`/disputes/${disputeId}/messages`),
+    sendMessage: (disputeId: string, message: string) =>
+        api.post(`/disputes/${disputeId}/messages`, { message }),
+    reopen: (disputeId: string, reason: string) =>
+        api.post(`/disputes/${disputeId}/reopen`, { reason }),
 };
 
 export const paymentsAPI = {

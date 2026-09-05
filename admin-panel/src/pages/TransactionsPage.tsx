@@ -3,7 +3,7 @@ import { ArrowLeftRight, Search, Plus, CheckCircle, XCircle, Eye } from 'lucide-
 import apiClient from '../api/client';
 import { formatDate } from '../utils/formatters';
 import { toast, Toaster } from 'react-hot-toast';
-import TransactionCancelSlideover from '../components/transactions/TransactionCancelSlideover.tsx';
+import TransactionCancelSlideover from '../components/transactions/TransactionCancelSlideover';
 import TransactionDetailModal from '../components/transactions/TransactionDetailModal';
 
 const statusLabels: Record<string, string> = {
@@ -28,7 +28,7 @@ function ProductSelect({ value, onChange }: { value: string; onChange: (v: strin
     const [products, setProducts] = useState<any[]>([]);
 
     useEffect(() => {
-        apiClient.get('/products').then(res => setProducts(res.data.items || []));
+        apiClient.get('/admin/products').then(res => setProducts(res.data.items || []));
     }, []);
 
     return (
